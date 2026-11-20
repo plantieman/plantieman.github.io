@@ -1,0 +1,1749 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body>
+<title>Plantyman</title>
+<style>
+@font-face{font-family:"Fraunces";font-style:normal;font-weight:100 900;font-display:swap;src:url(fonts/fraunces.woff2) format("woff2")}
+@font-face{font-family:"Fraunces";font-style:italic;font-weight:100 900;font-display:swap;src:url(fonts/fraunces-italic.woff2) format("woff2")}
+@font-face{font-family:"Nunito";font-style:normal;font-weight:200 1000;font-display:swap;src:url(fonts/nunito.woff2) format("woff2")}
+body{font-variation-settings:"SOFT" 100}
+</style>
+<style>
+/* Layout: one narrow column like a notebook page. The plant sits on the start screen, one task card at a time, everything else small at the edges. */
+:root{
+  --bg:#f5eee1; --surface:#fdf9f1; --ink:#4d4238; --muted:#85786a; --line:#e8dcc8;
+  --accent:#b3d1ae; --on-accent:#334232; --marker:#fbdfb6; --marker-ink:#4d4238;
+  --leaf:#9bbf96; --leaf2:#c4dcbc; --trunk:#bd9c7f; --soil:#d9c6ac; --seed:#9d7c5c;
+  --lilac:#e4daee; --frost:#9cc3e6; --frost-ink:#3f7fb5;
+  --high:#b25f4c; --mid:#96772c; --low:#5f8463;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r-card:26px; --r-pill:99px;
+}
+:root[data-skin="dunkel"]{
+  --bg:#2a241e; --surface:#352e27; --ink:#f0e6d6; --muted:#b5a692; --line:#4a4037;
+  --accent:#a9c9a4; --on-accent:#1f2a1e; --marker:#f6d9a6; --marker-ink:#3b3228;
+  --leaf:#8fb38a; --leaf2:#6f9a6c; --trunk:#b08d6f; --soil:#5c4c3c; --seed:#c9a988;
+  --lilac:#4b4260; --frost:#6fa8dc; --frost-ink:#9cc8f0;
+  --high:#f0a08e; --mid:#e6c57a; --low:#a9c9a4; color-scheme:dark }
+:root[data-skin="wald"]{
+  --bg:#1e2b24; --surface:#27382f; --ink:#eef3e6; --muted:#a9b8a4; --line:#3a4f43;
+  --accent:#e3c77a; --on-accent:#2b2410; --marker:#e3c77a; --marker-ink:#2b2410;
+  --leaf:#8fc08a; --leaf2:#5f9a6a; --trunk:#b79370; --soil:#4a3d2e; --seed:#e3c77a;
+  --lilac:#3d4a5c; --frost:#7fb7e0; --frost-ink:#a9d3f2;
+  --high:#f2a48f; --mid:#e3c77a; --low:#a6d3a0; color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.app{max-width:30rem;margin-inline:auto;padding-inline:16px;padding-block:14px 40px;display:flex;flex-direction:column;gap:20px}
+.stack{display:flex;flex-direction:column;gap:20px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px}
+.top .left{display:flex;align-items:center;gap:4px;min-width:0}
+.iconbtn{background:none;border:0;color:var(--muted);width:44px;height:44px;border-radius:50%;display:grid;place-items:center;cursor:pointer;flex:none}
+.iconbtn:hover{background:var(--line);color:var(--ink)}
+.iconbtn svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+#back{margin-left:-10px}.right{display:flex;margin-right:-10px}
+.brand{font-family:var(--display);font-weight:600;font-size:1.3rem;display:flex;align-items:center;gap:6px}
+.brand svg{width:24px;height:24px}
+.brand .st{stroke:var(--leaf);stroke-width:2.2;stroke-linecap:round;fill:none}.brand .lf{fill:var(--leaf)}.brand .lf2{fill:var(--leaf2)}
+.claim{font-family:var(--display);font-style:italic;color:var(--muted);margin:0;font-size:1rem}
+.linkbtn{background:none;border:0;padding:6px 0;font:inherit;font-size:.9rem;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.linkbtn:hover{color:var(--ink)}
+button:focus-visible,input:focus-visible,label:focus-within,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:28px 22px 22px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.task{font-family:var(--display);font-weight:600;font-size:clamp(1.6rem,7vw,2.1rem);line-height:1.15;text-wrap:balance;overflow-wrap:anywhere;margin:0}
+.chip{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border:1px solid currentColor;border-radius:99px;padding:1px 9px}
+.chip.cat{background:var(--lilac);border-color:transparent;color:var(--ink)}
+.chip.high{color:var(--high)} .chip.mid{color:var(--mid)} .chip.low{color:var(--low)} .chip.ex{color:var(--muted)}
+.actions{display:flex;flex-direction:column;gap:10px}
+.btn{font:inherit;font-weight:700;border-radius:var(--r-pill);padding:14px 18px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer;width:100%}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-size:1.05rem}
+.btn.small{width:auto;padding:9px 16px;font-size:.9rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.meter{display:flex;gap:6px;align-items:center;font-size:.88rem;color:var(--muted);flex-wrap:wrap}
+.dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--muted)}
+.dot.used{background:var(--muted)}
+.note{font-size:.92rem;color:var(--muted);margin:0}
+.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+.home{align-items:center;text-align:center}
+.plant{width:160px;max-width:100%;height:auto}
+.plant .leaf{fill:var(--leaf)} .plant .leaf2{fill:var(--leaf2)} .plant .trunk{fill:var(--trunk)}
+.plant .soil{fill:var(--soil)} .plant .seed{fill:var(--seed)} .plant .stem{stroke:var(--stem,var(--leaf));stroke-width:3;stroke-linecap:round;fill:none}
+.plant .halo{fill:var(--lilac)}
+.streak{font-family:var(--display);font-weight:600;font-size:1.5rem;line-height:1.2;margin:0}
+.home .actions{width:100%}
+.points{font-variant-numeric:tabular-nums}
+.plus{display:inline-block;background:var(--lilac);color:var(--ink);border-radius:99px;padding:3px 12px;font-weight:700;font-size:.95rem;align-self:flex-start}
+
+.mark{background:linear-gradient(transparent 12%,var(--marker) 12%,var(--marker) 88%,transparent 88%);color:var(--marker-ink);padding:0 .18em;border-radius:4px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.done-card .task{font-size:clamp(1.4rem,6vw,1.8rem);line-height:1.35}
+@media (prefers-reduced-motion:no-preference){
+  .done-card .mark{background-size:0 100%;background-repeat:no-repeat;animation:swipe .5s .1s ease-out forwards}
+  @keyframes swipe{to{background-size:100% 100%}}
+}
+
+.pick{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.pick button{text-align:left;font-weight:600;border-radius:18px}
+
+details.steps{font-size:.92rem;color:var(--muted)}
+details.steps summary{cursor:pointer;width:fit-content}
+.sublist{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.sublist li{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.sublist label{display:flex;gap:10px;align-items:baseline;min-width:0;overflow-wrap:anywhere;color:var(--ink);cursor:pointer}
+.sublist input:checked+span{text-decoration:line-through;color:var(--muted)}
+input[type=checkbox]{accent-color:var(--accent);width:1.05rem;height:1.05rem;flex:none}
+
+form{display:flex;flex-direction:column;gap:16px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>span,.legend{font-size:.88rem;font-weight:700;color:var(--muted)}
+input[type=text],input[type=time],textarea{font:inherit;padding:13px 16px;border-radius:16px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;border:0;padding:0;margin:0}
+.seg.two{grid-template-columns:repeat(2,1fr)}
+.seg.three{grid-template-columns:repeat(3,1fr)}
+.check{display:flex;gap:10px;align-items:center;cursor:pointer;font-weight:600}
+.pills{display:flex;flex-wrap:wrap;gap:6px;border:0;padding:0;margin:0}
+.pills label{border:1px solid var(--line);border-radius:99px;padding:8px 14px;font-size:.9rem;cursor:pointer}
+.pills input{position:absolute;opacity:0;pointer-events:none}
+.pills label:has(input:checked){background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:700}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:calc(var(--r-card) * .6);padding:14px 14px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile b{font-family:var(--display);font-weight:600;font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile span{font-size:.82rem;color:var(--muted)}
+.bars{display:grid;grid-template-columns:auto 1fr auto;gap:8px 10px;align-items:center;font-size:.9rem}
+.bars .lab{min-width:0;overflow-wrap:anywhere;max-width:9rem}
+.bars .track{height:12px;display:flex}
+.bars .fill{background:var(--leaf);border-radius:0 4px 4px 0;min-width:2px;height:100%}
+.bars .fill.zero{background:var(--line)}
+.bars .val{font-variant-numeric:tabular-nums;color:var(--muted);text-align:right}
+.timer{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:baseline}
+.timer b{font-family:var(--display);font-weight:600;font-size:2rem;font-variant-numeric:tabular-nums;line-height:1}
+.timer span{color:var(--muted);font-size:.9rem}
+.timer .bar{grid-column:1/-1;height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.timer .bar i{display:block;height:100%;background:var(--leaf);border-radius:99px}
+.trophy{width:1.1em;height:1.1em;vertical-align:-.15em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hint{margin:0;font-size:.9rem;background:var(--marker);color:var(--marker-ink);border-radius:12px;padding:8px 12px}
+.seg label{border:1px solid var(--line);border-radius:99px;padding:9px 4px;text-align:center;font-size:.9rem;cursor:pointer;min-width:0}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:700}
+.row{display:flex;gap:10px}
+.row .btn{flex:1}
+.addrow{display:flex;gap:8px}
+
+.calhead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+.calcard{touch-action:pan-y}
+.cal .wd{font-size:.75rem;color:var(--muted);font-weight:700}
+.day{aspect-ratio:1;width:100%;max-width:44px;justify-self:center;display:grid;place-items:center;border-radius:50%;font-size:.92rem;font-variant-numeric:tabular-nums;position:relative;border:2px solid transparent}
+.day.done{background:var(--accent);color:var(--on-accent);font-weight:700}
+.day.missed{border:1.5px dashed var(--muted);color:var(--muted)}
+.day.fz{border:2px solid var(--frost)}
+.day.fz::after{content:"\273B";position:absolute;top:-7px;right:-5px;font-size:.8rem;color:var(--frost-ink);line-height:1}
+.day.today{text-decoration:underline;text-underline-offset:3px;font-weight:700}
+.key{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.85rem;color:var(--muted)}
+.key span{display:flex;align-items:center;gap:8px}
+.key .day{width:22px;font-size:0;flex:none}
+button.day{background:none;color:inherit;font:inherit;font-size:.92rem;padding:0;cursor:pointer}
+.day.sel{outline:2px solid var(--ink);outline-offset:2px}
+.duedot{position:absolute;bottom:2px;left:50%;margin-left:-2.5px;width:5px;height:5px;border-radius:50%;background:var(--high)}
+.day.done .duedot{background:var(--on-accent)}
+.key .day .duedot{bottom:8px}
+input[type=date]{font:inherit;padding:13px 16px;border-radius:16px;border:1px solid var(--line);background:var(--bg);color:var(--ink);min-width:0;flex:1 1 9rem;min-height:3.2rem}
+.sub{font-size:.88rem;font-weight:700;color:var(--muted);margin:4px 0 0}
+h2{font-family:var(--display);font-weight:600;font-size:1.15rem;margin:0}
+.section{display:flex;flex-direction:column;gap:10px}
+.list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.list li{display:flex;gap:12px;align-items:baseline;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)}
+.list .t{min-width:0;overflow-wrap:anywhere;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.list .ops{display:flex;gap:14px;flex:none}
+.stats{font-size:.92rem;color:var(--muted);font-variant-numeric:tabular-nums;margin:0}
+
+.foot{align-items:center}
+.plant{width:124px}
+.btn.draw{font-family:var(--display);font-weight:600;font-size:1.45rem;padding:24px 18px}
+.lead{font-family:var(--display);font-weight:600;font-size:clamp(1.35rem,6vw,1.7rem);line-height:1.25;text-wrap:balance;margin:0}
+.back-card{align-items:center;justify-content:center;text-align:center;min-height:15rem}
+.sprout{width:72px;height:72px}
+textarea{resize:vertical;min-height:6.5rem;font-size:.82rem;line-height:1.4;font-family:ui-monospace,Menlo,Consolas,monospace}
+input[type=file]{font:inherit;font-size:.9rem;color:var(--muted);max-width:100%}
+.hint .linkbtn{color:inherit;padding:0;font-weight:700}
+.how{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:12px}
+.how li::marker{font-family:var(--display);font-weight:600;color:var(--muted)}
+.sprout .st{stroke:var(--leaf);stroke-width:2.2;stroke-linecap:round;fill:none}.sprout .lf{fill:var(--leaf)}.sprout .lf2{fill:var(--leaf2)}
+a.btn{display:inline-block;text-align:center;text-decoration:none}
+.btn small{display:block;font-weight:600;font-size:.8rem;opacity:.85;margin-top:1px}
+.duo{display:flex;flex-wrap:wrap;gap:10px}
+.duo .btn{flex:1 1 7.5rem;font-size:1rem;padding:11px 6px;border-radius:22px;min-width:0}
+.duo .btn small{font-size:.76rem;white-space:nowrap}
+.addrow{flex-wrap:wrap}
+.addrow input{flex:1 1 9rem}
+.plantbtn{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;border-radius:20px}
+.stagecap{font-size:.85rem;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:3px 12px}
+.stages{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.stages li{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.stages .plant{width:56px}
+.stages b{font-family:var(--display);font-weight:600;font-size:1.05rem;display:block}
+.stages .when{font-size:.85rem;color:var(--muted)}
+.stages .st8{font-size:.82rem;color:var(--muted);text-align:right}
+.stages li.here{background:var(--lilac);border-radius:16px;border-bottom-color:transparent;padding-inline:10px;margin-inline:-10px}
+.stages li.here .st8,.stages li.here .when{color:var(--ink)}
+.stages li.here .st8{font-weight:700}
+.stages li.ahead .plant{opacity:.45}
+.tick{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--muted);background:none;cursor:pointer;padding:0;position:relative}
+.tick::before{content:"";position:absolute;inset:-9px}
+.tick:hover{border-color:var(--leaf);background:var(--leaf2)}
+.list li.open{display:grid;grid-template-columns:auto 1fr;gap:0 12px;align-items:center}
+.list li.open .ops{grid-column:2}
+textarea.plain{font-family:var(--body);font-size:1rem;line-height:1.5;min-height:5rem}
+.notetext{margin:8px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}
+input[type=number]{font:inherit;padding:13px 16px;border-radius:16px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:7rem}
+.inline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:600}
+.explain p{margin:0}
+@media (prefers-reduced-motion:no-preference){
+  .back-card .sprout{animation:sway .55s ease-in-out both}
+  @keyframes sway{0%{transform:scale(.55) rotate(-14deg);opacity:.3}60%{transform:scale(1.1) rotate(7deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+  .calcard.slide-next{animation:slidenext .25s ease-out both}
+  .calcard.slide-prev{animation:slideprev .25s ease-out both}
+  @keyframes slidenext{from{transform:translateX(40px);opacity:.3}to{transform:none;opacity:1}}
+  @keyframes slideprev{from{transform:translateX(-40px);opacity:.3}to{transform:none;opacity:1}}
+  .card.reveal{animation:unfold .4s cubic-bezier(.2,.8,.3,1.1) both;transform-origin:50% 0}
+  @keyframes unfold{from{transform:perspective(700px) rotateX(-75deg);opacity:0}to{transform:none;opacity:1}}
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="left">
+      <button class="iconbtn" id="back" type="button" aria-label="Zurück" title="Zurück" hidden><svg viewBox="0 0 24 24" stroke-width="2.2"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
+      <span class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="st" d="M12 21v-9"/><path class="lf" d="M12 13C12 8 8.5 5.5 4 5.5 4 10 7 13 12 13z"/><path class="lf2" d="M12 11c0-4 2.8-6.5 7-6.5 0 4-2.6 6.5-7 6.5z"/></svg>Plantyman</span>
+    </div>
+    <div class="right"><button class="iconbtn" id="calbtn" type="button" aria-label="Kalender" title="Kalender"><svg viewBox="0 0 24 24" stroke-width="1.9"><rect x="4" y="5.5" width="16" height="14.5" rx="3"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/><circle cx="9" cy="14.5" r=".6"/><circle cx="15" cy="14.5" r=".6"/></svg></button>
+    <button class="iconbtn" id="nav" type="button" aria-label="Einstellungen" title="Einstellungen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2" stroke-width="2.6" stroke-dasharray="3.22 3.22" stroke-linecap="butt"/><circle cx="12" cy="12" r="6.2" stroke-width="1.8"/><circle cx="12" cy="12" r="2.4" stroke-width="1.8"/></svg></button></div>
+  </header>
+  <main id="view"></main>
+</div>
+
+<script>
+/*LOGIC*/
+var MAX_SKIPS = 5, BASE_POINTS = 10, MIN_POINTS = 5, MONTH_BONUS = 100, MAX_FREEZES = 6, FREEZES_PER_WEEK = 2, WEEK_BONUS = 20, TIMER_MIN = 10;
+var PRIO_RANK = { high: 0, mid: 1, low: 2, none: 3 };
+var STAGES = [
+  { from: 0, key: 'seed' }, { from: 1, key: 'seedling' }, { from: 3, key: 'sprout' },
+  { from: 7, key: 'shrub' }, { from: 14, key: 'sapling' }, { from: 30, key: 'tree' }
+];
+/* Texts: every visible word comes from I18N (defined below) through t(key, ...). A value is either a string or a function of the given values.
+   A missing key falls back to German. setLang also names the plant stages and the garden items. */
+var LANG = 'de';
+function t(k) {
+  var d = I18N[LANG] || I18N.de, v = k in d ? d[k] : I18N.de[k];
+  if (v === undefined) return k;
+  return typeof v === 'function' ? v.apply(null, Array.prototype.slice.call(arguments, 1)) : v;
+}
+function setLang(l) {
+  LANG = I18N[l] ? l : 'de';
+  STAGES.forEach(function (st) { st.name = t('stage.' + st.key); });
+  LOOKS.forEach(function (lk) { lk.name = t('look.' + lk.id); });
+}
+/* Picks a language from the phone's preferred languages: German for German, English for everything else. */
+function langFor(list) {
+  for (var i = 0; i < (list || []).length; i++) { var c = String(list[i] || '').slice(0, 2).toLowerCase(); if (I18N[c]) return c; }
+  return 'en';
+}
+
+function dayKey(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function yesterdayKey(d) { var y = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1); return dayKey(y); }
+function weekKey(d) {
+  var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  var wd = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - wd);
+  var y = t.getUTCFullYear();
+  var w = Math.ceil(((t - Date.UTC(y, 0, 1)) / 864e5 + 1) / 7);
+  return y + '-W' + String(w).padStart(2, '0');
+}
+function freshState() {
+  return { tasks: [], mode: 'prio', day: null, skips: 0, daySkips: 0, skipped: [], current: null, locked: false,
+    freezeWeek: null, activeDays: [], seeded: false, points: 0, streak: 0, lastDoneDay: null,
+    cats: t('defaultCats').slice(), freezeDays: [],
+    doneDays: [], trophies: [], filter: '', skin: 'hell',
+    freezes: 2, grantWeek: null, coveredThrough: null, fellBack: null, avoid: [], timer: null,
+    weeks: [], timerMin: TIMER_MIN, sound: true, best: 0, owned: [], pot: 'erde', leaf: 'gruen' };
+}
+function undone(s) { return s.tasks.filter(function (t) { return !t.done; }); }
+function openTasks(s) { return undone(s).filter(function (t) { return !t.from || !s.day || t.from <= s.day; }); }
+function catsOf(t) { return t.cats || (t.cat ? [t.cat] : []); }
+function inCat(t, c) { return catsOf(t).indexOf(c) >= 0; }
+function byId(s, id) { return s.tasks.find(function (t) { return t.id === id; }); }
+function pool(s, exclude) {
+  return openTasks(s).filter(function (t) {
+    return s.skipped.indexOf(t.id) < 0 && (exclude || []).indexOf(t.id) < 0 && (!s.filter || inCat(t, s.filter));
+  });
+}
+function skippedOpen(s) {
+  return s.skipped.map(function (id) { return byId(s, id); }).filter(function (t) { return t && !t.done; });
+}
+function isDue(t, day) { return !!t.due && !!day && t.due <= day; }
+/* Tasks whose due date has arrived are drawn before all others, the longest overdue first. */
+function pick(s, list, rnd) {
+  if (!list.length) return null;
+  var due = list.filter(function (t) { return isDue(t, s.day); });
+  if (due.length) list = due;
+  if (s.mode === 'random') return list[Math.floor(rnd() * list.length)];
+  return list.slice().sort(function (a, b) {
+    return (due.length ? (a.due < b.due ? -1 : a.due > b.due ? 1 : 0) : 0) || PRIO_RANK[a.prio] - PRIO_RANK[b.prio] || a.created - b.created;
+  })[0];
+}
+function shiftKey(k, r) {
+  var d = parseKey(k), y = d.getFullYear(), m = d.getMonth(), dd = d.getDate();
+  return dayKey(r === 'day' ? new Date(y, m, dd + 1) : r === 'week' ? new Date(y, m, dd + 7) : new Date(y, m + 1, Math.min(dd, new Date(y, m + 2, 0).getDate())));
+}
+/* The next due date of a recurring task: moved on by its interval until it lies after today. */
+function nextDue(due, r, now) {
+  var k = shiftKey(due, r), today = dayKey(now), n = 0;
+  while (k <= today && n++ < 800) k = shiftKey(k, r);
+  return k;
+}
+function addDays(k, n) { var d = parseKey(k); return dayKey(new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)); }
+/* Weekdays run from 1 (Monday) to 7 (Sunday). */
+function weekdayOf(k) { return (parseKey(k).getDay() + 6) % 7 + 1; }
+/* The next day that falls on one of the given weekdays, counted from the given day (inclusive) or from the day after it. */
+function nextOnDays(k, days, inclusive) {
+  var d = inclusive ? k : addDays(k, 1);
+  for (var i = 0; i < 7 && days.indexOf(weekdayOf(d)) < 0; i++) d = addDays(d, 1);
+  return d;
+}
+function weekDays(t) { return t.rep === 'week' && t.days && t.days.length ? t.days : null; }
+/* Saving a weekly task with chosen weekdays: unless its due date already falls on one of them, it becomes due on the next chosen day from today on, and shows up from that day. */
+function applyDays(t, days, now) {
+  if (t.rep !== 'week' || !days || !days.length) { delete t.days; return; }
+  var today = dayKey(now);
+  t.days = days.slice().sort();
+  if (!t.due || t.days.indexOf(weekdayOf(t.due)) < 0) t.due = nextOnDays(today, t.days, true);
+  if (t.due > today) t.from = t.due; else delete t.from;
+}
+function awardMonth(s, y, m) {
+  var ym = dayKey(new Date(y, m, 1)).slice(0, 7);
+  if (s.trophies.indexOf(ym) >= 0 || !monthWon(s, y, m)) return 0;
+  s.trophies.push(ym); s.points += MONTH_BONUS; return MONTH_BONUS;
+}
+/* A week streak is a calendar week, Monday to Sunday, in which every day is done or covered by a freeze. */
+function weekStart(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() - (d.getDay() + 6) % 7); }
+function weekWon(s, mon) {
+  for (var i = 0; i < 7; i++) {
+    var k = dayKey(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i));
+    if (s.doneDays.indexOf(k) < 0 && s.freezeDays.indexOf(k) < 0) return false;
+  }
+  return true;
+}
+function awardWeek(s, d) {
+  var mon = weekStart(d), k = dayKey(mon);
+  if (s.weeks.indexOf(k) >= 0 || !weekWon(s, mon)) return 0;
+  s.weeks.push(k); s.points += WEEK_BONUS; return WEEK_BONUS;
+}
+function timerMin(s) { var n = Math.round(+s.timerMin); return n >= 1 && n <= 180 ? n : TIMER_MIN; }
+function timerMs(s) { return timerMin(s) * 60000; }
+function minText(m) { return t('minutes', m); }
+function subCount(list) { return t('subCount', list.filter(function (x) { return x.done; }).length, list.length); }
+/* Missed days since the last covered day: a freeze covers each one; without one the plant falls back to its checkpoint. */
+function settle(s, now) {
+  var today = dayKey(now), last = s.coveredThrough || s.lastDoneDay;
+  if (!last || s.streak <= 0) return;
+  var k = addDays(last, 1);
+  while (k < today) {
+    if (s.freezes > 0) { s.freezes--; if (s.freezeDays.indexOf(k) < 0) s.freezeDays.push(k); s.coveredThrough = k; k = addDays(k, 1); }
+    else {
+      var i = stageFor(s.streak), base = STAGES[i].from;
+      s.streak = s.streak > base ? base : (i > 0 ? STAGES[i - 1].from : 0);
+      s.fellBack = today; s.coveredThrough = addDays(today, -1); break;
+    }
+  }
+}
+function rollover(s, now) {
+  var d = dayKey(now);
+  if (s.day !== d) {
+    s.day = d; s.skips = 0; s.daySkips = 0; s.skipped = []; s.locked = false; s.avoid = []; s.filter = ''; s.timer = null;
+    var w = weekKey(now);
+    if (s.grantWeek && s.grantWeek !== w) s.freezes = Math.min(MAX_FREEZES, s.freezes + FREEZES_PER_WEEK);
+    s.grantWeek = w;
+  }
+  settle(s, now);
+  var p = new Date(now.getFullYear(), now.getMonth() - 1, 1); awardMonth(s, p.getFullYear(), p.getMonth());
+  for (var i = 1; i <= 4; i++) awardWeek(s, new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7 * i));
+  if (s.activeDays.indexOf(d) < 0) s.activeDays.push(d);
+}
+/* Makes sure a valid task is showing, or that the choose-one state is set. */
+function ensureCurrent(s, rnd) {
+  var cur = s.current && byId(s, s.current);
+  if (cur && !cur.done) return;
+  s.current = null;
+  if (s.locked) { if (skippedOpen(s).length) return; s.locked = false; s.skipped = []; }
+  var next = pick(s, pool(s, s.avoid), rnd);
+  if (!next && s.avoid.length) { s.avoid = []; next = pick(s, pool(s), rnd); }
+  if (next) { s.current = next.id; return; }
+  if (skippedOpen(s).length) s.locked = true;
+}
+function canSkip(s) { return !s.locked && s.skips < MAX_SKIPS && openTasks(s).length > 1; }
+function skip(s, rnd) {
+  if (!canSkip(s) || !s.current) return;
+  s.skipped.push(s.current); s.skips++; s.daySkips++; s.current = null; s.timer = null;
+  if (s.skips >= MAX_SKIPS) { s.locked = true; return; }
+  if (s.filter && !pool(s).length && !pool(s, s.avoid).length) s.filter = '';
+  ensureCurrent(s, rnd);
+}
+function choose(s, id) { if (s.locked && s.skipped.indexOf(id) >= 0) s.current = id; }
+function pointsNow(s) { return Math.max(MIN_POINTS, BASE_POINTS - s.daySkips); }
+function streakNow(s) { return s.streak; }
+function doneToday(s, now) { return s.lastDoneDay === dayKey(now); }
+function stageFor(n) { var i = 0; STAGES.forEach(function (st, k) { if (n >= st.from) i = k; }); return i; }
+function monthWon(s, y, m) {
+  var n = new Date(y, m + 1, 0).getDate();
+  for (var d = 1; d <= n; d++) { var k = dayKey(new Date(y, m, d)); if (s.doneDays.indexOf(k) < 0 && s.freezeDays.indexOf(k) < 0) return false; }
+  return true;
+}
+function parseKey(k) { var a = k.split('-'); return new Date(+a[0], +a[1] - 1, +a[2]); }
+function longestStreak(days) {
+  var d = days.slice().sort(), best = 0, run = 0, prev = null;
+  d.forEach(function (k) {
+    var t = parseKey(k);
+    run = prev && Math.round((t - prev) / 864e5) === 1 ? run + 1 : 1;
+    if (run > best) best = run; prev = t;
+  });
+  return best;
+}
+function statsData(s, now) {
+  var done = s.tasks.filter(function (t) { return t.done; }), perDay = {}, byCat = {}, byWd = [0, 0, 0, 0, 0, 0, 0];
+  done.forEach(function (t) {
+    var d = new Date(t.done), k = dayKey(d);
+    perDay[k] = (perDay[k] || 0) + 1;
+    (catsOf(t).length ? catsOf(t) : ['']).forEach(function (c) { byCat[c] = (byCat[c] || 0) + 1; });
+    byWd[(d.getDay() + 6) % 7]++;
+  });
+  var bestDay = null; Object.keys(perDay).forEach(function (k) { if (!bestDay || perDay[k] > perDay[bestDay]) bestDay = k; });
+  var open = openTasks(s).slice().sort(function (a, b) { return a.created - b.created; })[0];
+  return { done: done.length, days: s.doneDays.length, avg: Object.keys(perDay).length ? done.length / Object.keys(perDay).length : 0,
+    longest: longestStreak(s.doneDays), bestDay: bestDay, bestCount: bestDay ? perDay[bestDay] : 0, byCat: byCat, byWd: byWd,
+    oldest: open || null, oldestDays: open ? Math.floor((now - open.created) / 864e5) : 0 };
+}
+function catCount(s, c, all) { return (all ? undone(s) : openTasks(s)).filter(function (t) { return inCat(t, c); }).length; }
+function nextFrom(r, now) {
+  var y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  return dayKey(r === 'day' ? new Date(y, m, d + 1) : r === 'week' ? new Date(y, m, d + 7) : new Date(y, m + 1, Math.min(d, new Date(y, m + 2, 0).getDate())));
+}
+function creditDay(s, now) {
+  var today = dayKey(now);
+  if (s.lastDoneDay !== today) { s.streak += 1; s.lastDoneDay = today; s.coveredThrough = today; }
+  if (s.doneDays.indexOf(today) < 0) s.doneDays.push(today);
+  s.best = Math.max(s.best || 0, s.streak);
+  return { month: awardMonth(s, now.getFullYear(), now.getMonth()), week: awardWeek(s, now) };
+}
+function release(s, t) {
+  if (s.locked) { s.locked = false; s.skipped = []; }
+  else s.skipped = s.skipped.filter(function (id) { return id !== t.id; });
+  s.current = null; s.timer = null;
+}
+/* Completes the drawn task, or the task with the given id when it is ticked off in the list. */
+function complete(s, now, id) {
+  var t = byId(s, id || s.current);
+  if (!t || t.done) return null;
+  var had = t.partial && t.partial.day === dayKey(now) ? t.partial.pts : 0, pts = Math.max(0, pointsNow(s) - had);
+  t.done = now.getTime();
+  s.points += pts;
+  if (t.id === s.current) release(s, t); else s.skipped = s.skipped.filter(function (x) { return x !== t.id; });
+  var bonus = creditDay(s, now);
+  /* With chosen weekdays the next copy is due on the next chosen day after today, or after the current due date if that is still ahead. */
+  var wd = weekDays(t), today = dayKey(now);
+  var nd = wd ? nextOnDays(t.due && t.due > today ? t.due : today, wd, false) : t.rep && t.due ? nextDue(t.due, t.rep, now) : '', nf = wd ? nd : t.rep ? nextFrom(t.rep, now) : '';
+  if (t.rep) {
+    var copy = { due: nd, id: 'r' + now.getTime() + Math.floor(Math.random() * 1e4), text: t.text, prio: t.prio, cats: catsOf(t).slice(), rep: t.rep,
+      created: now.getTime(), done: null, from: nd && nd < nf ? nd : nf, note: t.note || '', subs: (t.subs || []).map(function (x) { return { id: x.id, text: x.text, done: false }; }) };
+    if (wd) copy.days = wd.slice();
+    s.tasks.push(copy);
+  }
+  return { task: t, pts: pts, bonus: bonus.month, wbonus: bonus.week };
+}
+/* A ticked subtask keeps the streak: it counts for the day once, without points. */
+function creditSub(s, now) { return doneToday(s, now) ? null : creditDay(s, now); }
+function timerElapsed(s, now) { return s.timer && s.timer.id === s.current ? now.getTime() - s.timer.start : -1; }
+function startTimer(s, now) { if (s.current) s.timer = { id: s.current, start: now.getTime() }; }
+/* A finished timer on a task counts for the day and earns half the points; the task stays open. */
+function pauseAfterTimer(s, now) {
+  var t = s.current && byId(s, s.current);
+  if (!t || timerElapsed(s, now) < timerMs(s)) return null;
+  var pts = Math.ceil(pointsNow(s) / 2);
+  s.points += pts; t.partial = { day: dayKey(now), pts: pts + (t.partial && t.partial.day === dayKey(now) ? t.partial.pts : 0) };
+  s.avoid = s.avoid.concat([t.id]);
+  release(s, t);
+  var b = creditDay(s, now);
+  return { task: t, pts: pts, bonus: b.month, wbonus: b.week, partial: true, min: timerMin(s) };
+}
+function reshuffle(s) { s.avoid = s.avoid.concat(s.skipped); s.skips = 0; s.skipped = []; s.locked = false; s.current = null; s.timer = null; }
+function norm(x) { return String(x).trim().toLowerCase().replace(/\s+/g, ' '); }
+function isDup(s, text, exceptId) {
+  var n = norm(text);
+  return !!n && undone(s).some(function (t) { return !t.example && t.id !== exceptId && norm(t.text) === n; });
+}
+function addCat(s, name) {
+  var v = String(name).trim().slice(0, 24);
+  if (!v) return '';
+  var hit = s.cats.find(function (c) { return norm(c) === norm(v); });
+  if (hit) return hit;
+  s.cats.push(v); return v;
+}
+function addTask(s, text, prio, now) {
+  s.tasks = s.tasks.filter(function (t) { return !(t.example && !t.done); });
+  var t = { id: 't' + now.getTime() + Math.floor(Math.random() * 1e4), text: text, prio: prio, created: now.getTime(), done: null, subs: [] };
+  s.tasks.push(t); return t;
+}
+/* Reminder text for the day with the given key: days alternate between naming one concrete task and the state of the plant. */
+function reminderBody(s, key) {
+  var list = undone(s).filter(function (t) { return !t.example && (!t.from || t.from <= key); }).sort(function (a, b) {
+    return PRIO_RANK[a.prio] - PRIO_RANK[b.prio] || a.created - b.created;
+  });
+  if (!list.length) return t('rem.empty');
+  var due = list.filter(function (t) { return isDue(t, key); }).sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; });
+  if (due.length) return t(due[0].due < key ? 'rem.overdue' : 'rem.dueToday', due[0].text, due.length - 1);
+  var n = Math.round(parseKey(key).getTime() / 864e5), m = timerMin(s);
+  if (n % 2) return s.streak > 0 ? t('rem.plant', STAGES[stageFor(s.streak)].name) : t('rem.seed');
+  return t('rem.task', list[Math.floor(n / 2) % list.length].text, m);
+}
+/* Reminders while nothing is done yet: two during the day at times that move a little from day to day, and a last one in the evening.
+   Today is left out once something is done. Ids 1 to 3 per day. */
+function toMin(hm) { var a = String(hm || '').split(':'); return a.length === 2 ? +a[0] * 60 + +a[1] : 1320; }
+function lateText(s, lm) {
+  var left = 1440 - lm, h = Math.floor(left / 60);
+  return t('rem.late', h, left, s.streak > 0);
+}
+function reminderPlan(s, now, late, days) {
+  var lm = toMin(late), out = [];
+  for (var d = 0; d < days; d++) {
+    if (d === 0 && doneToday(s, now)) continue;
+    var base = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d), key = dayKey(base), n = Math.round(base.getTime() / 864e5);
+    var a = 660 + (n * 37) % 150, b = 930 + (n * 53) % 180, slots = [];
+    var due = undone(s).some(function (t) { return !t.example && isDue(t, key) && (!t.from || t.from <= key); });
+    if (a <= lm - 60) slots.push([a, reminderBody(s, key)]);
+    if (b <= lm - 60) slots.push([b, due ? reminderBody(s, key) : t('nudges')[n % t('nudges').length]]);
+    slots.push([lm, lateText(s, lm)]);
+    slots.forEach(function (x, i) {
+      var at = new Date(base.getFullYear(), base.getMonth(), base.getDate(), Math.floor(x[0] / 60), x[0] % 60);
+      if (at > now) out.push({ id: d * 3 + i + 1, at: at, body: x[1] });
+    });
+  }
+  return out;
+}
+/* The garden shop: points buy freezes or unlock pots and leaf colours, which stay unlocked. */
+var FREEZE_PRICE = 50;
+var LOOKS = [
+  { id: 'erde', kind: 'pot', price: 0 },
+  { id: 'terrakotta', kind: 'pot', price: 100, pot: '#c9764f', rim: '#b0623e' },
+  { id: 'himmel', kind: 'pot', price: 150, pot: '#7ba6cc', rim: '#5f8db6' },
+  { id: 'flieder', kind: 'pot', price: 200, pot: '#b49fd0', rim: '#9a84ba' },
+  { id: 'gruen', kind: 'leaf', price: 0 },
+  { id: 'herbst', kind: 'leaf', price: 150, leaf: '#d98a4e', leaf2: '#e9b860', stem: '#a98b62' },
+  { id: 'silber', kind: 'leaf', price: 200, leaf: '#7fa3a0', leaf2: '#a9c4c0', stem: '#7fa3a0' },
+  { id: 'kirsch', kind: 'leaf', price: 250, leaf: '#e59ab3', leaf2: '#f3c6d4', stem: '#8fae86' }
+];
+function look(id) { return LOOKS.find(function (l) { return l.id === id; }); }
+function owns(s, id) { var l = look(id); return !!l && (!l.price || (s.owned || []).indexOf(id) >= 0); }
+function canBuyFreeze(s) { return s.points >= FREEZE_PRICE && s.freezes < MAX_FREEZES; }
+function buyFreeze(s) { if (!canBuyFreeze(s)) return false; s.points -= FREEZE_PRICE; s.freezes++; return true; }
+function useLook(s, id) { var l = look(id); if (!l || !owns(s, id)) return false; if (l.kind === 'pot') s.pot = id; else s.leaf = id; return true; }
+function buyLook(s, id) {
+  var l = look(id);
+  if (!l || owns(s, id) || s.points < l.price) return false;
+  s.points -= l.price; s.owned = (s.owned || []).concat([id]); useLook(s, id); return true;
+}
+/* All texts. German is the reference; every other language needs the same keys (a missing one falls back to German). */
+var I18N = {
+de: {
+  locale: 'de-DE', decimal: ',', privacyPage: 'datenschutz.html', imprintPage: 'impressum.html',
+  defaultCats: function () { return ['Haushalt', 'Arbeit', 'Sport', 'Finanzen', 'Sonstiges']; },
+  'stage.seed': 'Saatkorn', 'stage.seedling': 'Keimling', 'stage.sprout': 'Spross', 'stage.shrub': 'Strauch', 'stage.sapling': 'Bäumchen', 'stage.tree': 'Baum',
+  'look.erde': 'Ohne Topf', 'look.terrakotta': 'Terrakotta-Topf', 'look.himmel': 'Blauer Topf', 'look.flieder': 'Fliederfarbener Topf',
+  'look.gruen': 'Grüne Blätter', 'look.herbst': 'Herbstlaub', 'look.silber': 'Silbertanne', 'look.kirsch': 'Kirschblüte',
+  minutes: function (m) { return m === 1 ? '1 Minute' : m + ' Minuten'; },
+  points: function (n) { return n + (n === 1 ? ' Punkt' : ' Punkte'); },
+  plusPoints: function (n) { return '+' + n + ' Punkte'; },
+  plusBonus: function (n) { return '+' + n + ' Bonuspunkte'; },
+  freezes: function (n) { return n + (n === 1 ? ' Freeze' : ' Freezes'); },
+  tasks: function (n) { return n + (n === 1 ? ' Aufgabe' : ' Aufgaben'); },
+  weekStreaks: function (n) { return n === 1 ? 'Wochen-Streak' : 'Wochen-Streaks'; },
+  monthStreaks: function (n) { return n === 1 ? 'Monats-Streak' : 'Monats-Streaks'; },
+  weekStreaksN: function (n) { return n + (n === 1 ? ' Wochen-Streak' : ' Wochen-Streaks'); },
+  monthStreaksN: function (n) { return n + (n === 1 ? ' Monats-Streak' : ' Monats-Streaks'); },
+  subCount: function (d, n) { return d + ' von ' + n + ' erledigt'; },
+  wdShort: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
+  clock: function (x) { return x + ' Uhr'; },
+
+  'rem.empty': 'Trag ein, was ansteht. Eine Aufgabe reicht.',
+  'rem.overdue': function (x, more) { return 'Überfällig: „' + x + '“.' + I18N.de.moreDue(more); },
+  'rem.dueToday': function (x, more) { return 'Heute fällig: „' + x + '“.' + I18N.de.moreDue(more); },
+  moreDue: function (n) { return !n ? '' : ' Dazu ' + (n === 1 ? 'eine weitere fällige Aufgabe.' : n + ' weitere fällige Aufgaben.'); },
+  'rem.plant': function (name) { return 'Deine Pflanze ist gerade ein ' + name + '. Heute braucht sie noch eine erledigte Aufgabe.'; },
+  'rem.seed': 'Dein Saatkorn wartet. Mit einer erledigten Aufgabe keimt es.',
+  'rem.task': function (x, m) { return 'Heute dran: „' + x + '“. ' + (m === 1 ? 'Eine Minute reicht.' : m + ' Minuten reichen.'); },
+  nudges: ['Heute ist noch nichts erledigt. Eine kleine Aufgabe zählt genauso wie eine große.',
+    'Zeit für einen kurzen Schritt? Zieh eine Aufgabe und schau, was kommt.',
+    'Deine Pflanze wartet noch auf ihren Wachstumstag.',
+    'Eine Aufgabe ziehen, anfangen, fertig. Mehr braucht es heute nicht.'],
+  'rem.late': function (h, left, grows) {
+    return (h >= 2 ? 'Noch ' + h + ' Stunden' : h === 1 ? 'Noch eine Stunde' : 'Noch ' + left + ' Minuten') + ' bis Mitternacht. Eine kleine Aufgabe reicht, damit ' +
+      (grows ? 'deine Pflanze heute wächst.' : 'dein Saatkorn keimt.');
+  },
+  'rem.denied': 'Benachrichtigungen sind für Plantyman nicht erlaubt. Erlaube sie in den Einstellungen deines Handys und schalte die Erinnerung dann wieder ein.',
+  timerNote: function (m) { return I18N.de.minutes(m) + ' geschafft. Du kannst aufhören oder weitermachen.'; },
+
+  ex1: 'Spülmaschine ausräumen', ex2: 'Rechnung vom Zahnarzt überweisen', ex3: 'Altglas wegbringen',
+  'skin.hell': 'Hell', 'skin.dunkel': 'Dunkel', 'skin.wald': 'Wald',
+  back: 'Zurück', calendar: 'Kalender', settings: 'Einstellungen',
+  cancel: 'Abbrechen', remove: 'Entfernen', add: 'Hinzufügen', edit: 'Bearbeiten', 'delete': 'Löschen', save: 'Speichern', saveAnyway: 'Trotzdem speichern',
+  undo: 'Rückgängig', next: 'Weiter', done: 'Erledigt', today: 'heute', all: 'Alle', note: 'Notiz', example: 'Beispiel',
+  'prio.none': 'Keine', 'prio.low': 'Niedrig', 'prio.mid': 'Mittel', 'prio.high': 'Hoch',
+  'rep.day': 'täglich', 'rep.week': 'wöchentlich', 'rep.month': 'monatlich', 'rep.days': function (l) { return 'jeden ' + l; },
+  'due.since': function (d) { return 'Überfällig seit ' + d; }, 'due.today': 'Heute fällig', 'due.tomorrow': 'Morgen fällig', 'due.on': function (d) { return 'Fällig am ' + d; },
+
+  'bak.file': 'plantyman-sicherung', 'bak.shareTitle': 'Plantyman Sicherung', 'bak.textLabel': 'Sicherungstext', 'bak.copy': 'Text kopieren',
+  'bak.outNative': 'Speichere die Datei über das Teilen-Fenster, oder kopiere den Text.',
+  'bak.outWeb': 'Kopiere den Text und bewahre ihn auf, zum Beispiel in einer Notiz oder einer E-Mail an dich selbst.',
+  'bak.chooseFile': 'Sicherungsdatei wählen', 'bak.paste': 'oder Sicherungstext einfügen', 'bak.restore': 'Einspielen',
+  'bak.summary': function (date, open, pts) { return 'Sicherung' + (date ? ' vom ' + date : '') + ': ' + open + (open === 1 ? ' offene Aufgabe, ' : ' offene Aufgaben, ') + pts + ' Punkte. Das ersetzt alle Daten auf diesem Gerät.'; },
+  'bak.replace': 'Ja, ersetzen', 'bak.invalid': 'Das ist keine gültige Plantyman-Sicherung.',
+  'bak.selected': 'Der Text ist markiert. Kopiere ihn jetzt über das Menü deines Geräts.', 'bak.copied': 'Kopiert.', 'bak.readErr': 'Die Datei ließ sich nicht lesen.',
+
+  'form.due': 'Fällig am (optional)', 'form.dueLabel': 'Fällig am', 'form.prio': 'Priorität (optional)', 'form.cats': 'Kategorien (optional, auch mehrere)',
+  'form.rep': 'Wiederkehrende Aufgabe', 'form.repDay': 'Jeden Tag', 'form.repWeek': 'Jede Woche', 'form.repMonth': 'Jeden Monat', 'form.which': 'An welchen Tagen? (optional)',
+  'form.repDaysNote': 'Sie ist an jedem gewählten Tag fällig und kommt nach dem Erledigen zum nächsten wieder.',
+  'form.repWeekNote': 'Ohne gewählte Tage kommt sie eine Woche nach dem Erledigen wieder.',
+  'form.repMonthNote': 'Nach dem Erledigen kommt sie von selbst wieder. Für einen festen Tag im Monat trag oben ein Fälligkeitsdatum ein.',
+  'form.repNote': 'Nach dem Erledigen kommt sie von selbst wieder.',
+  'form.subs': 'Unteraufgaben (optional)', 'form.subPh': 'Kleiner Schritt', 'form.noteAdd': 'Notiz hinzufügen', 'form.notePh': 'Was du dir dazu merken willst',
+  'form.edit': 'Aufgabe bearbeiten', 'form.ob': 'Was schiebst du gerade vor dir her?', 'form.new': 'Neue Aufgabe', 'form.ph': 'z. B. Wäsche aufhängen',
+  'form.dup': 'Diese Aufgabe gibt es schon in deiner Liste.', 'form.later': 'Aufgabe später erstellen',
+  'cat.own': 'Eigene Kategorie', 'cat.add': 'Kategorie hinzufügen',
+
+  'st.empty': 'Sobald du die erste Aufgabe erledigt hast, stehen hier deine Zahlen.', 'st.noCat': 'Ohne Kategorie',
+  'st.done': 'Aufgaben erledigt', 'st.points': 'Punkte', 'st.streak': 'aktuelle Streak in Tagen', 'st.longest': 'längste Streak in Tagen',
+  'st.avg': 'Aufgaben pro aktivem Tag', 'st.days': function (n) { return n === 1 ? 'Tag mit erledigter Aufgabe' : 'Tage mit erledigter Aufgabe'; },
+  'st.freezes': function (n) { return n === 1 ? 'Freeze verfügbar' : 'Freezes verfügbar'; }, 'st.freezesUsed': 'Freezes genutzt',
+  'st.bestDay': function (d, n) { return 'Dein stärkster Tag war der ' + d + ' mit ' + n + (n === 1 ? ' Aufgabe.' : ' Aufgaben.'); },
+  'st.byCat': 'Erledigt nach Kategorie', 'st.byWd': 'Erledigt nach Wochentag',
+  'st.oldest': function (x, d) { return 'Am längsten offen: „' + x + '“, seit ' + (d < 1 ? 'heute' : d + (d === 1 ? ' Tag' : ' Tagen')) + '.'; },
+
+  'cal.lDone': 'erledigt', 'cal.lMissed': 'nichts erledigt', 'cal.lFreeze': 'Freeze genutzt',
+  'cal.lDue': function (n) { return n === 1 ? 'eine Aufgabe fällig' : n + ' Aufgaben fällig'; },
+  'cal.dayLabel': function (d, lab) { return d + '. ' + lab; }, 'cal.prev': 'Vorheriger Monat', 'cal.next': 'Nächster Monat',
+  'cal.kDone': 'Aufgabe erledigt', 'cal.kMissed': 'Nichts erledigt', 'cal.kFreeze': 'Freeze genutzt', 'cal.kDue': 'Aufgabe fällig',
+  'cal.note': function (c, n, mb, wb) { return c + ' von ' + n + ' Tagen mit erledigter Aufgabe. Ein Monat ohne Lücke ist ein Monats-Streak und bringt ' + mb + ' Bonuspunkte. Eine Woche ohne Lücke von Montag bis Sonntag ist ein Wochen-Streak und bringt ' + wb + '. Freeze-Tage zählen mit.'; },
+  'day.tap': 'Tippe auf einen Tag, um zu sehen, was erledigt wurde oder fällig ist.', 'day.freeze': 'Ein Freeze hat deine Pflanze an diesem Tag geschützt.',
+  'day.counts': 'Dieser Tag zählt für deine Streak.', 'day.nothing': 'An diesem Tag wurde nichts erledigt.', 'day.due': 'Fällig',
+  'day.empty': 'Für diesen Tag ist nichts eingetragen.', 'day.add': '+ Aufgabe für diesen Tag',
+
+  grown: function (n) { return n + (n === 1 ? ' Tag gewachsen' : ' Tage gewachsen'); }, seedWaits: 'Dein Saatkorn wartet.',
+  'hn.fell': function (name) { return 'Deine Pflanze ist auf die Stufe ' + name + ' zurückgefallen. Von hier wächst sie weiter.'; },
+  'hn.seed': 'Dein Saatkorn keimt, sobald du eine Aufgabe erledigst.',
+  'hn.freeze': 'Gestern hat ein Freeze deine Pflanze geschützt. Heute braucht sie wieder eine Aufgabe.',
+  'hn.needs': 'Deine Pflanze braucht heute noch eine erledigte Aufgabe.', 'hn.grown': 'Deine Pflanze ist für heute gegossen. Sie ist ausgewachsen.',
+  'hn.next': function (d, name) { return 'Deine Pflanze ist für heute gegossen. Nächste Stufe ' + (d === 1 ? 'morgen' : 'in ' + d + ' Tagen') + ': ' + name + '.'; },
+
+  claim: 'Entspannt produktiv', how: 'So funktioniert Plantyman',
+  'ob.lead': 'Du weißt, was zu tun ist, und fängst trotzdem nicht an.', 'ob.one': 'Plantyman gibt dir eine Aufgabe. Nur eine.',
+  'ob.s1': 'Du trägst ein, was ansteht. Danach siehst du keine Liste mehr.',
+  'ob.s2': 'Du drückst den Knopf und bekommst eine Aufgabe. Passt sie gerade nicht, ziehst du eine andere.',
+  'ob.s3': function (m) { return 'Du startest sie mit einem Timer von ' + m + '. Er läuft sofort los, fertig werden musst du in der Zeit nicht. Jeder Tag mit einer Aufgabe lässt deine Pflanze wachsen.'; },
+  'ob.backHow': 'Zurück zur Erklärung', 'ob.go': 'Los geht\'s',
+  'ob.added': function (n) { return n === 1 ? 'Deine erste Aufgabe ist eingetragen.' : n + ' Aufgaben sind eingetragen.'; },
+  'ob.more': 'Du kannst jetzt weitere eintragen oder gleich loslegen. Nachtragen geht jederzeit.',
+  'ob.toHome': 'Weiter zur Startseite', 'ob.another': 'Noch eine Aufgabe eintragen', drawing: 'Deine Aufgabe kommt.',
+
+  allTasks: 'Alle Aufgaben', addTask: 'Aufgabe hinzufügen', addTaskPlus: '+ Aufgabe hinzufügen',
+  'tl.deleted': function (l) { return '„' + l + '“ gelöscht.'; }, 'tl.ticked': function (l, p) { return '„' + l + '“ erledigt · +' + p + ' Punkte.'; },
+  'tl.open': function (n) { return 'Offen (' + n + ')'; }, 'tl.tickHint': 'Schon erledigt? Tippe auf den Kreis vor der Aufgabe.',
+  'tl.tickLabel': function (l) { return '„' + l + '“ als erledigt markieren'; }, 'tl.tickTitle': 'Als erledigt markieren',
+  'tl.subs': function (x) { return 'Unteraufgaben: ' + x; }, 'tl.none': 'Keine offenen Aufgaben.',
+  'tl.waiting': function (n) { return 'Kommt wieder (' + n + ')'; }, 'tl.from': function (d) { return 'ab ' + d; },
+  'tl.done': function (n) { return 'Erledigt (' + n + ')'; }, 'tl.doneEmpty': 'Hier steht, was du geschafft hast.',
+
+  'set.general': 'Allgemein', 'set.stats': 'Statistik', 'set.showAll': function (n) { return 'Alle Aufgaben anzeigen (' + n + ' offen)'; },
+  'set.draw': 'Nächste Aufgabe ziehen', 'set.byPrio': 'Nach Priorität', 'set.random': 'Zufällig',
+  'set.timer': 'Timer', 'set.timerMin': 'Dauer in Minuten', 'set.sound': 'Ton bei Timer-Start und Timer-Ende',
+  'set.timerNote': 'Nach Ablauf kannst du aufhören: Der Tag zählt und du bekommst die halben Punkte.',
+  'set.timerNative': 'Ist der Ton an, meldet sich die App am Ende mit einer Benachrichtigung, auch bei gesperrtem Handy.',
+  'set.lang': 'Sprache', 'set.langAuto': 'Wie am Handy', 'set.style': 'Stil', 'set.cats': 'Kategorien', 'set.noCats': 'Noch keine Kategorien.',
+  'set.catsNote': 'Entfernen geht nur, wenn keine offene Aufgabe in der Kategorie liegt.', freezesTitle: 'Freezes',
+  'set.freezes': function (f, max, wk) { return 'Du hast ' + f + ' von höchstens ' + max + '. Jede Woche kommen ' + wk + ' dazu. Verpasst du einen Tag, schützt ein Freeze deine Pflanze von selbst. Ohne Freeze fällt sie auf den Anfang ihrer Stufe zurück.'; },
+  'set.remind': 'Erinnerung', 'set.remOn': 'Erinnern, solange heute nichts erledigt ist', 'set.remLate': 'Letzte Erinnerung am Abend',
+  'set.remNote': 'Tagsüber meldet sich Plantyman zweimal, jeden Tag zu etwas anderer Zeit, abends ein letztes Mal. Hast du an dem Tag etwas erledigt, ist Ruhe.',
+  'set.remWeb': 'Erinnerungen gibt es in der installierten App.',
+  'set.backup': 'Datensicherung', 'set.backupNote': 'Deine Aufgaben und Punkte liegen nur auf diesem Gerät. Eine Sicherung schützt sie und bringt sie auf ein anderes Gerät.',
+  'set.bakOut': 'Sicherung erstellen', 'set.bakIn': 'Sicherung einspielen',
+  'set.feedback': 'Feedback', 'set.fbNote': function (m) { return 'Was gefällt dir, was stört, was fehlt? Deine Nachricht geht als E-Mail an ' + m + '.'; },
+  'set.fbSubject': 'Feedback zu Plantyman', 'set.fbBody': 'Was mir aufgefallen ist:\n\n', 'set.fbBtn': 'Feedback geben', 'set.rateBtn': 'Im Play Store bewerten',
+  'set.legal': 'Rechtliches', 'set.legalNote': 'Deine Aufgaben bleiben auf deinem Gerät. Was das genau heißt, steht in der Datenschutzerklärung.',
+  'set.share': 'Anonyme Nutzungsstatistik senden',
+  'set.shareNote': 'Hilft, Plantyman besser zu machen. Gesendet wird nur, welche Funktionen genutzt werden, zum Beispiel dass eine Aufgabe gezogen oder erledigt wurde. Aufgabentexte, Namen oder Kontakte werden nie gesendet.',
+  'set.privacy': 'Datenschutzerklärung', 'set.imprint': 'Impressum',
+  'set.footer': function (d, n, p) { return 'An ' + d + (d === 1 ? ' Tag' : ' Tagen') + ' genutzt · ' + n + ' erledigt · ' + p + ' Punkte'; },
+
+  'pl.title': 'Deine Pflanze',
+  'pl.streak': function (n) { return n ? 'Deine Streak: ' + n + (n === 1 ? ' Wachstumstag.' : ' Wachstumstage.') : 'Noch kein Wachstumstag.'; },
+  'pl.toNext': function (g, name) { return 'Noch ' + g + (g === 1 ? ' Tag' : ' Tage') + ' bis zur Stufe ' + name + '.'; },
+  'pl.grown': 'Deine Pflanze ist ausgewachsen.', 'pl.all': 'Alle Stufen',
+  'pl.from': function (n) { return 'ab ' + n + (n === 1 ? ' Wachstumstag' : ' Wachstumstagen'); }, 'pl.start': 'Start',
+  'pl.here': 'Hier stehst du', 'pl.reached': 'erreicht', 'pl.left': function (n) { return 'noch ' + n + (n === 1 ? ' Tag' : ' Tage'); },
+  'pl.note': 'Jeder Tag mit einer erledigten Aufgabe ist ein Wachstumstag. Verpasst du einen Tag, schützt ein Freeze die Pflanze. Ohne Freeze fällt sie auf den Anfang ihrer Stufe zurück.',
+  'pl.shop': function (n) { return 'Gärtnerei · ' + n + ' Punkte einlösen'; },
+
+  shop: 'Gärtnerei', 'sh.free': 'Von Anfang an dabei', 'sh.inUse': 'Im Einsatz', 'sh.use': 'Benutzen',
+  'sh.missing': function (n) { return 'Noch ' + n + ' Punkte'; }, 'sh.unlock': 'Freischalten',
+  'sh.bought': function (l, p) { return l + ' für ' + p + ' Punkte gekauft.'; },
+  'sh.intro': 'Punkte bekommst du für erledigte Aufgaben. Hier tauschst du sie gegen Freezes oder machst deine Pflanze schöner. Was du freischaltest, bleibt dir.',
+  'sh.freeze': 'Freeze', 'sh.freezeNote': function (f, max) { return 'Du hast ' + f + ' von höchstens ' + max + '. Ein Freeze schützt deine Pflanze an einem Tag, an dem du nichts erledigst.'; },
+  'sh.buyFreeze': function (p) { return 'Freeze kaufen · ' + p + ' Punkte'; }, 'sh.maxFreezes': function (m) { return 'Du hast schon ' + m + ' Freezes'; },
+  'sh.freezeMissing': function (n) { return 'Freeze · noch ' + n + ' Punkte'; }, 'sh.pots': 'Töpfe', 'sh.leaves': 'Blätter', 'sh.oneFreeze': 'Ein Freeze',
+
+  'hw.oneT': 'Eine Aufgabe',
+  'hw.one': function (n) { return 'Du trägst ein, was ansteht, und ziehst dann eine Aufgabe. Hat eine Aufgabe ein Datum bei „Fällig am“ und ist der Tag erreicht, kommt sie zuerst. Passt sie gerade nicht, ziehst du eine andere, bis zu ' + n + '-mal am Tag. Danach suchst du dir eine der gezeigten aus oder mischst neu.'; },
+  'hw.timer': function (m) { return '„Aufgabe starten“ startet einen Timer von ' + m + '. Er läuft sofort los. Fertig werden musst du in der Zeit nicht: Nach Ablauf kannst du aufhören, und der Tag zählt trotzdem. Die Dauer stellst du in den Einstellungen ein. Ohne Timer geht es auch, dann tippst du einfach auf „Erledigt“.'; },
+  'hw.points': function (b, min) { return 'Eine erledigte Aufgabe bringt ' + b + ' Punkte. Jedes Wechseln am selben Tag kostet einen Punkt, weniger als ' + min + ' werden es nie. Hörst du nach dem Timer auf, bekommst du die Hälfte. Erledigst du die Aufgabe am selben Tag doch noch, kommt der Rest dazu. In der Gärtnerei tauschst du Punkte gegen Freezes oder schaltest neue Töpfe und Blätter für deine Pflanze frei.'; },
+  'hw.toShop': 'Zur Gärtnerei', 'hw.pointsT': 'Punkte', 'hw.plantT': 'Pflanze und Streak',
+  'hw.plant': 'Jeder Tag mit einer erledigten Aufgabe, einer abgehakten Unteraufgabe oder einem geschafften Timer ist ein Wachstumstag. Punkte gibt es für Unteraufgaben nicht. Die Zahl deiner Wachstumstage ist deine Streak. Mit ihr wächst die Pflanze vom Saatkorn bis zum Baum.',
+  'hw.allStages': 'Alle Stufen ansehen',
+  'hw.freezes': function (wk, max) { return 'Ein Freeze schützt deine Pflanze an einem Tag, an dem du nichts erledigst. Er wird von selbst eingesetzt. Du startest mit 2, jede Woche kommen ' + wk + ' dazu, mehr als ' + max + ' werden es nicht. Ohne Freeze fällt die Pflanze auf den Anfang ihrer Stufe zurück, nicht auf das Saatkorn.'; },
+  'hw.streaksT': 'Wochen- und Monats-Streak',
+  'hw.streaks': function (wb, mb) { return 'Eine Woche ohne Lücke von Montag bis Sonntag ist ein Wochen-Streak und bringt ' + wb + ' Bonuspunkte. Ein Kalendermonat ohne Lücke ist ein Monats-Streak und bringt ' + mb + '. Tage mit Freeze zählen mit.'; },
+  'hw.replay': 'Einführung noch einmal ansehen',
+
+  'dn.timer': function (m) { return m + ' geschafft'; }, 'dn.tipPoints': 'Punkte gibt es für jede erledigte Aufgabe. Je seltener du am Tag wechselst, desto mehr.',
+  'dn.tipFreeze': function (f, wk) { return 'Verpasst du mal einen Tag, schützt ein Freeze deine Pflanze. Du hast ' + f + ', jede Woche kommen ' + wk + ' dazu.'; },
+  'dn.partial': 'Der Tag zählt, deine Pflanze ist gegossen. Die Aufgabe bleibt offen und kommt wieder.',
+  'dn.watered': function (line) { return 'Deine Pflanze ist für heute gegossen. ' + line + '.'; }, 'dn.nth': function (c) { return 'Das war Aufgabe ' + c + ' heute.'; },
+  'dn.finish': 'Doch fertig geworden · volle Punkte', 'dn.next': 'Nächste Aufgabe', 'dn.stop': 'Reicht für jetzt',
+
+  'home.continue': 'Weiter mit deiner Aufgabe', 'home.draw': 'Aufgabe ziehen', 'home.plantTitle': 'Deine Pflanze ansehen',
+  'home.stage': function (name, i, n) { return name + ' · Stufe ' + i + ' von ' + n; },
+  'home.due': function (n) { return (n === 1 ? 'Eine Aufgabe ist' : n + ' Aufgaben sind') + ' heute fällig.'; },
+  'home.shopTitle': 'Punkte in der Gärtnerei einlösen', 'home.from': 'Woraus möchtest du ziehen?',
+  'home.all': function (n) { return 'Alle Aufgaben (' + n + ' offen)'; },
+  'em.eyebrow': 'Alles erledigt', 'em.title': 'Nichts mehr offen.', 'em.note': 'Schreib auf, was als Nächstes ansteht.',
+  'pk.max': function (n) { return n === 5 ? 'Fünfmal gewechselt' : n + '-mal gewechselt'; }, 'pk.allFrom': function (c) { return 'Das waren alle aus ' + c; },
+  'pk.all': 'Das waren alle', 'pk.choose': 'Such dir eine davon aus.', 'pk.reshuffle': 'Neu mischen', 'pk.allCats': 'Aus allen Kategorien ziehen',
+  'pk.nothing': 'Hier ist gerade nichts offen.', toHome: 'Zur Startseite',
+  'tk.start': 'Aufgabe starten', 'tk.withTimer': function (m) { return 'mit ' + m + '-Minuten-Timer'; }, 'tk.chooseOther': 'Andere auswählen',
+  'tk.other': 'Andere Aufgabe ziehen', 'tk.noOther': 'Es gibt gerade keine andere offene Aufgabe.', 'tk.newTask': 'Neue Aufgabe erstellen',
+  'tk.cancelTimer': 'Timer abbrechen', 'tk.pause': function (n) { return 'Für heute aufhören · ' + n + ' Punkte'; },
+  'tk.yours': 'Deine Aufgabe', 'tk.yoursFrom': function (c) { return 'Deine Aufgabe aus ' + c; }, 'tk.subs': 'Unteraufgaben',
+  'tk.reached': 'Ziel erreicht. Du kannst weitermachen oder aufhören.', 'tk.of': function (c) { return 'von ' + c; },
+  'tk.skipsLeft': function (n) { return 'Noch ' + n + '× wechseln heute'; }, 'tk.noSkips': 'Heute kein Wechsel mehr',
+  'tk.edit': 'Diese Aufgabe bearbeiten', 'tk.allAgain': 'Wieder aus allen Kategorien',
+  'sub.counts': 'Der Tag zählt, deine Pflanze ist gegossen.',
+  'sub.week': function (n) { return 'Wochen-Streak geschafft, +' + n + ' Bonuspunkte.'; },
+  'sub.month': function (n) { return 'Monats-Streak geschafft, +' + n + ' Bonuspunkte.'; }
+},
+
+en: {
+  locale: 'en-GB', decimal: '.', privacyPage: 'en/privacy.html', imprintPage: 'en/imprint.html',
+  defaultCats: function () { return ['Home', 'Work', 'Exercise', 'Money', 'Other']; },
+  'stage.seed': 'Seed', 'stage.seedling': 'Seedling', 'stage.sprout': 'Sprout', 'stage.shrub': 'Shrub', 'stage.sapling': 'Sapling', 'stage.tree': 'Tree',
+  'look.erde': 'No pot', 'look.terrakotta': 'Terracotta pot', 'look.himmel': 'Blue pot', 'look.flieder': 'Lilac pot',
+  'look.gruen': 'Green leaves', 'look.herbst': 'Autumn leaves', 'look.silber': 'Silver fir', 'look.kirsch': 'Cherry blossom',
+  minutes: function (m) { return m === 1 ? '1 minute' : m + ' minutes'; },
+  points: function (n) { return n + (n === 1 ? ' point' : ' points'); },
+  plusPoints: function (n) { return '+' + n + ' points'; },
+  plusBonus: function (n) { return '+' + n + ' bonus points'; },
+  freezes: function (n) { return n + (n === 1 ? ' freeze' : ' freezes'); },
+  tasks: function (n) { return n + (n === 1 ? ' task' : ' tasks'); },
+  weekStreaks: function (n) { return n === 1 ? 'Week streak' : 'Week streaks'; },
+  monthStreaks: function (n) { return n === 1 ? 'Month streak' : 'Month streaks'; },
+  weekStreaksN: function (n) { return n + (n === 1 ? ' week streak' : ' week streaks'); },
+  monthStreaksN: function (n) { return n + (n === 1 ? ' month streak' : ' month streaks'); },
+  subCount: function (d, n) { return d + ' of ' + n + ' done'; },
+  wdShort: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+  clock: function (x) { return x; },
+
+  'rem.empty': 'Add what needs doing. One task is enough.',
+  'rem.overdue': function (x, more) { return 'Overdue: “' + x + '”.' + I18N.en.moreDue(more); },
+  'rem.dueToday': function (x, more) { return 'Due today: “' + x + '”.' + I18N.en.moreDue(more); },
+  moreDue: function (n) { return !n ? '' : ' Plus ' + (n === 1 ? 'one more task due.' : n + ' more tasks due.'); },
+  'rem.plant': function (name) { return 'Your plant is a ' + String(name).toLowerCase() + ' right now. It still needs one finished task today.'; },
+  'rem.seed': 'Your seed is waiting. One finished task and it sprouts.',
+  'rem.task': function (x, m) { return 'Up today: “' + x + '”. ' + (m === 1 ? 'One minute is enough.' : m + ' minutes are enough.'); },
+  nudges: ['Nothing done yet today. A small task counts just as much as a big one.',
+    'Time for a quick step? Draw a task and see what comes up.',
+    'Your plant is still waiting for its growing day.',
+    'Draw a task, start, done. That\'s all it takes today.'],
+  'rem.late': function (h, left, grows) {
+    return (h >= 2 ? h + ' hours' : h === 1 ? 'One hour' : left + ' minutes') + ' left until midnight. One small task is enough for ' +
+      (grows ? 'your plant to grow today.' : 'your seed to sprout.');
+  },
+  'rem.denied': 'Plantyman isn\'t allowed to send notifications. Allow them in your phone\'s settings, then switch the reminder back on.',
+  timerNote: function (m) { return I18N.en.minutes(m) + ' done. You can stop or keep going.'; },
+
+  ex1: 'Empty the dishwasher', ex2: 'Pay the dentist\'s bill', ex3: 'Take out the recycling',
+  'skin.hell': 'Light', 'skin.dunkel': 'Dark', 'skin.wald': 'Forest',
+  back: 'Back', calendar: 'Calendar', settings: 'Settings',
+  cancel: 'Cancel', remove: 'Remove', add: 'Add', edit: 'Edit', 'delete': 'Delete', save: 'Save', saveAnyway: 'Save anyway',
+  undo: 'Undo', next: 'Next', done: 'Done', today: 'today', all: 'All', note: 'Note', example: 'Example',
+  'prio.none': 'None', 'prio.low': 'Low', 'prio.mid': 'Medium', 'prio.high': 'High',
+  'rep.day': 'daily', 'rep.week': 'weekly', 'rep.month': 'monthly', 'rep.days': function (l) { return 'every ' + l; },
+  'due.since': function (d) { return 'Overdue since ' + d; }, 'due.today': 'Due today', 'due.tomorrow': 'Due tomorrow', 'due.on': function (d) { return 'Due ' + d; },
+
+  'bak.file': 'plantyman-backup', 'bak.shareTitle': 'Plantyman backup', 'bak.textLabel': 'Backup text', 'bak.copy': 'Copy text',
+  'bak.outNative': 'Save the file using the share window, or copy the text.',
+  'bak.outWeb': 'Copy the text and keep it somewhere safe, for example in a note or an email to yourself.',
+  'bak.chooseFile': 'Choose backup file', 'bak.paste': 'or paste backup text', 'bak.restore': 'Restore',
+  'bak.summary': function (date, open, pts) { return 'Backup' + (date ? ' from ' + date : '') + ': ' + open + (open === 1 ? ' open task, ' : ' open tasks, ') + pts + ' points. This replaces all data on this device.'; },
+  'bak.replace': 'Yes, replace', 'bak.invalid': 'This isn\'t a valid Plantyman backup.',
+  'bak.selected': 'The text is selected. Copy it now using your device\'s menu.', 'bak.copied': 'Copied.', 'bak.readErr': 'The file couldn\'t be read.',
+
+  'form.due': 'Due date (optional)', 'form.dueLabel': 'Due date', 'form.prio': 'Priority (optional)', 'form.cats': 'Categories (optional, pick several if you like)',
+  'form.rep': 'Repeating task', 'form.repDay': 'Every day', 'form.repWeek': 'Every week', 'form.repMonth': 'Every month', 'form.which': 'Which days? (optional)',
+  'form.repDaysNote': 'It is due on each chosen day and comes back for the next one once done.',
+  'form.repWeekNote': 'Without chosen days it comes back one week after you finish it.',
+  'form.repMonthNote': 'It comes back by itself once done. For a fixed day of the month, set a due date above.',
+  'form.repNote': 'It comes back by itself once done.',
+  'form.subs': 'Subtasks (optional)', 'form.subPh': 'A small step', 'form.noteAdd': 'Add a note', 'form.notePh': 'Anything you want to remember about it',
+  'form.edit': 'Edit task', 'form.ob': 'What have you been putting off?', 'form.new': 'New task', 'form.ph': 'e.g. Hang up the laundry',
+  'form.dup': 'This task is already on your list.', 'form.later': 'Add a task later',
+  'cat.own': 'Your own category', 'cat.add': 'Add category',
+
+  'st.empty': 'Once you finish your first task, your numbers show up here.', 'st.noCat': 'No category',
+  'st.done': 'tasks done', 'st.points': 'points', 'st.streak': 'current streak in days', 'st.longest': 'longest streak in days',
+  'st.avg': 'tasks per active day', 'st.days': function (n) { return n === 1 ? 'day with a finished task' : 'days with a finished task'; },
+  'st.freezes': function (n) { return n === 1 ? 'freeze available' : 'freezes available'; }, 'st.freezesUsed': 'freezes used',
+  'st.bestDay': function (d, n) { return 'Your best day was ' + d + ' with ' + n + (n === 1 ? ' task.' : ' tasks.'); },
+  'st.byCat': 'Done by category', 'st.byWd': 'Done by weekday',
+  'st.oldest': function (x, d) { return 'Open the longest: “' + x + '”, ' + (d < 1 ? 'since today' : 'for ' + d + (d === 1 ? ' day' : ' days')) + '.'; },
+
+  'cal.lDone': 'done', 'cal.lMissed': 'nothing done', 'cal.lFreeze': 'freeze used',
+  'cal.lDue': function (n) { return n === 1 ? 'one task due' : n + ' tasks due'; },
+  'cal.dayLabel': function (d, lab) { return d + (lab ? ', ' + lab : ''); }, 'cal.prev': 'Previous month', 'cal.next': 'Next month',
+  'cal.kDone': 'Task done', 'cal.kMissed': 'Nothing done', 'cal.kFreeze': 'Freeze used', 'cal.kDue': 'Task due',
+  'cal.note': function (c, n, mb, wb) { return c + ' of ' + n + ' days with a finished task. A month without a gap is a month streak and earns ' + mb + ' bonus points. A week without a gap from Monday to Sunday is a week streak and earns ' + wb + '. Freeze days count too.'; },
+  'day.tap': 'Tap a day to see what was done or what is due.', 'day.freeze': 'A freeze protected your plant on this day.',
+  'day.counts': 'This day counts for your streak.', 'day.nothing': 'Nothing was done on this day.', 'day.due': 'Due',
+  'day.empty': 'Nothing is planned for this day.', 'day.add': '+ Task for this day',
+
+  grown: function (n) { return n + (n === 1 ? ' day of growth' : ' days of growth'); }, seedWaits: 'Your seed is waiting.',
+  'hn.fell': function (name) { return 'Your plant has dropped back to ' + name + '. It keeps growing from here.'; },
+  'hn.seed': 'Your seed sprouts as soon as you finish a task.',
+  'hn.freeze': 'Yesterday a freeze protected your plant. Today it needs a task again.',
+  'hn.needs': 'Your plant still needs one finished task today.', 'hn.grown': 'Your plant is watered for today. It is fully grown.',
+  'hn.next': function (d, name) { return 'Your plant is watered for today. Next stage ' + (d === 1 ? 'tomorrow' : 'in ' + d + ' days') + ': ' + name + '.'; },
+
+  claim: 'Calmly productive', how: 'How Plantyman works',
+  'ob.lead': 'You know what needs doing, and still you don\'t start.', 'ob.one': 'Plantyman gives you one task. Just one.',
+  'ob.s1': 'You add what needs doing. After that you won\'t see a list anymore.',
+  'ob.s2': 'You press the button and get one task. If it doesn\'t fit right now, you draw another.',
+  'ob.s3': function (m) { return 'You start it with a ' + m + ' timer. It runs right away, and you don\'t have to finish in that time. Every day with a task makes your plant grow.'; },
+  'ob.backHow': 'Back to the explanation', 'ob.go': 'Let\'s go',
+  'ob.added': function (n) { return n === 1 ? 'Your first task is in.' : n + ' tasks are in.'; },
+  'ob.more': 'You can add more now or get started right away. You can always add more later.',
+  'ob.toHome': 'Go to start screen', 'ob.another': 'Add another task', drawing: 'Your task is coming.',
+
+  allTasks: 'All tasks', addTask: 'Add task', addTaskPlus: '+ Add task',
+  'tl.deleted': function (l) { return '“' + l + '” deleted.'; }, 'tl.ticked': function (l, p) { return '“' + l + '” done · +' + p + ' points.'; },
+  'tl.open': function (n) { return 'Open (' + n + ')'; }, 'tl.tickHint': 'Already done? Tap the circle in front of the task.',
+  'tl.tickLabel': function (l) { return 'Mark “' + l + '” as done'; }, 'tl.tickTitle': 'Mark as done',
+  'tl.subs': function (x) { return 'Subtasks: ' + x; }, 'tl.none': 'No open tasks.',
+  'tl.waiting': function (n) { return 'Coming back (' + n + ')'; }, 'tl.from': function (d) { return 'from ' + d; },
+  'tl.done': function (n) { return 'Done (' + n + ')'; }, 'tl.doneEmpty': 'What you get done will show up here.',
+
+  'set.general': 'General', 'set.stats': 'Statistics', 'set.showAll': function (n) { return 'Show all tasks (' + n + ' open)'; },
+  'set.draw': 'Drawing the next task', 'set.byPrio': 'By priority', 'set.random': 'Random',
+  'set.timer': 'Timer', 'set.timerMin': 'Length in minutes', 'set.sound': 'Sound when the timer starts and ends',
+  'set.timerNote': 'When it runs out you can stop: the day counts and you get half the points.',
+  'set.timerNative': 'With sound on, the app also sends a notification at the end, even when your phone is locked.',
+  'set.lang': 'Language', 'set.langAuto': 'Same as phone', 'set.style': 'Style', 'set.cats': 'Categories', 'set.noCats': 'No categories yet.',
+  'set.catsNote': 'You can only remove a category with no open task in it.', freezesTitle: 'Freezes',
+  'set.freezes': function (f, max, wk) { return 'You have ' + f + ' of at most ' + max + '. You get ' + wk + ' more every week. If you miss a day, a freeze protects your plant automatically. Without one, it drops back to the start of its stage.'; },
+  'set.remind': 'Reminder', 'set.remOn': 'Remind me while nothing is done today', 'set.remLate': 'Last reminder in the evening',
+  'set.remNote': 'During the day Plantyman checks in twice, at a slightly different time each day, and once more in the evening. Once you\'ve done something that day, it stays quiet.',
+  'set.remWeb': 'Reminders are available in the installed app.',
+  'set.backup': 'Backup', 'set.backupNote': 'Your tasks and points are only stored on this device. A backup keeps them safe and moves them to another device.',
+  'set.bakOut': 'Create backup', 'set.bakIn': 'Restore backup',
+  'set.feedback': 'Feedback', 'set.fbNote': function (m) { return 'What do you like, what bothers you, what\'s missing? Your message goes by email to ' + m + '.'; },
+  'set.fbSubject': 'Feedback on Plantyman', 'set.fbBody': 'What I noticed:\n\n', 'set.fbBtn': 'Send feedback', 'set.rateBtn': 'Rate on Google Play',
+  'set.legal': 'Legal', 'set.legalNote': 'Your tasks stay on your device. The privacy policy explains exactly what that means.',
+  'set.share': 'Send anonymous usage statistics',
+  'set.shareNote': 'Helps make Plantyman better. Only which features are used is sent, for example that a task was drawn or finished. Task texts, names or contacts are never sent.',
+  'set.privacy': 'Privacy policy', 'set.imprint': 'Legal notice',
+  'set.footer': function (d, n, p) { return 'Used on ' + d + (d === 1 ? ' day' : ' days') + ' · ' + n + ' done · ' + p + ' points'; },
+
+  'pl.title': 'Your plant',
+  'pl.streak': function (n) { return n ? 'Your streak: ' + n + (n === 1 ? ' growing day.' : ' growing days.') : 'No growing day yet.'; },
+  'pl.toNext': function (g, name) { return g + (g === 1 ? ' more day' : ' more days') + ' until ' + name + '.'; },
+  'pl.grown': 'Your plant is fully grown.', 'pl.all': 'All stages',
+  'pl.from': function (n) { return 'from ' + n + (n === 1 ? ' growing day' : ' growing days'); }, 'pl.start': 'Start',
+  'pl.here': 'You are here', 'pl.reached': 'reached', 'pl.left': function (n) { return n + (n === 1 ? ' more day' : ' more days'); },
+  'pl.note': 'Every day with a finished task is a growing day. If you miss a day, a freeze protects the plant. Without one, it drops back to the start of its stage.',
+  'pl.shop': function (n) { return 'Garden shop · spend ' + n + ' points'; },
+
+  shop: 'Garden shop', 'sh.free': 'Included from the start', 'sh.inUse': 'In use', 'sh.use': 'Use',
+  'sh.missing': function (n) { return n + ' more points'; }, 'sh.unlock': 'Unlock',
+  'sh.bought': function (l, p) { return l + ' bought for ' + p + ' points.'; },
+  'sh.intro': 'You earn points for finished tasks. Here you trade them for freezes or make your plant prettier. Whatever you unlock is yours to keep.',
+  'sh.freeze': 'Freeze', 'sh.freezeNote': function (f, max) { return 'You have ' + f + ' of at most ' + max + '. A freeze protects your plant on a day when you get nothing done.'; },
+  'sh.buyFreeze': function (p) { return 'Buy a freeze · ' + p + ' points'; }, 'sh.maxFreezes': function (m) { return 'You already have ' + m + ' freezes'; },
+  'sh.freezeMissing': function (n) { return 'Freeze · ' + n + ' more points'; }, 'sh.pots': 'Pots', 'sh.leaves': 'Leaves', 'sh.oneFreeze': 'A freeze',
+
+  'hw.oneT': 'One task',
+  'hw.one': function (n) { return 'You add what needs doing, then draw one task. If a task has a due date and that day has come, it comes first. If it doesn\'t fit right now, you draw another, up to ' + n + ' times a day. After that you pick one of the tasks shown or shuffle again.'; },
+  'hw.timer': function (m) { return '“Start task” starts a ' + m + ' timer. It runs right away. You don\'t have to finish in that time: when it runs out you can stop, and the day still counts. You set the length in the settings. You can skip the timer too and just tap “Done”.'; },
+  'hw.points': function (b, min) { return 'A finished task earns ' + b + ' points. Each switch on the same day costs one point, but it never drops below ' + min + '. If you stop after the timer, you get half. If you still finish the task that day, you get the rest. In the garden shop you trade points for freezes or unlock new pots and leaves for your plant.'; },
+  'hw.toShop': 'To the garden shop', 'hw.pointsT': 'Points', 'hw.plantT': 'Plant and streak',
+  'hw.plant': 'Every day with a finished task, a ticked subtask or a completed timer is a growing day. Subtasks earn no points. The number of your growing days is your streak. With it the plant grows from seed to tree.',
+  'hw.allStages': 'See all stages',
+  'hw.freezes': function (wk, max) { return 'A freeze protects your plant on a day when you get nothing done. It is used automatically. You start with 2, you get ' + wk + ' more every week, and you never have more than ' + max + '. Without a freeze the plant drops back to the start of its stage, not all the way to the seed.'; },
+  'hw.streaksT': 'Week and month streaks',
+  'hw.streaks': function (wb, mb) { return 'A week without a gap from Monday to Sunday is a week streak and earns ' + wb + ' bonus points. A calendar month without a gap is a month streak and earns ' + mb + '. Freeze days count too.'; },
+  'hw.replay': 'Watch the introduction again',
+
+  'dn.timer': function (m) { return m + ' done'; }, 'dn.tipPoints': 'You get points for every finished task. The less you switch in a day, the more you get.',
+  'dn.tipFreeze': function (f, wk) { return 'If you miss a day, a freeze protects your plant. You have ' + f + ', and you get ' + wk + ' more every week.'; },
+  'dn.partial': 'The day counts and your plant is watered. The task stays open and will come back.',
+  'dn.watered': function (line) { return 'Your plant is watered for today. ' + line + '.'; }, 'dn.nth': function (c) { return 'That was task number ' + c + ' today.'; },
+  'dn.finish': 'Finished after all · full points', 'dn.next': 'Next task', 'dn.stop': 'That\'s enough for now',
+
+  'home.continue': 'Back to your task', 'home.draw': 'Draw a task', 'home.plantTitle': 'See your plant',
+  'home.stage': function (name, i, n) { return name + ' · stage ' + i + ' of ' + n; },
+  'home.due': function (n) { return (n === 1 ? 'One task is' : n + ' tasks are') + ' due today.'; },
+  'home.shopTitle': 'Spend points in the garden shop', 'home.from': 'Draw from which category?',
+  'home.all': function (n) { return 'All tasks (' + n + ' open)'; },
+  'em.eyebrow': 'All done', 'em.title': 'Nothing left open.', 'em.note': 'Write down what\'s coming up next.',
+  'pk.max': function (n) { return 'Switched ' + n + ' times'; }, 'pk.allFrom': function (c) { return 'That was everything in ' + c; },
+  'pk.all': 'That was everything', 'pk.choose': 'Pick one of these.', 'pk.reshuffle': 'Shuffle again', 'pk.allCats': 'Draw from all categories',
+  'pk.nothing': 'Nothing is open here right now.', toHome: 'To the start screen',
+  'tk.start': 'Start task', 'tk.withTimer': function (m) { return m + '-minute timer'; }, 'tk.chooseOther': 'Pick another',
+  'tk.other': 'Draw another task', 'tk.noOther': 'There is no other open task right now.', 'tk.newTask': 'Create a new task',
+  'tk.cancelTimer': 'Cancel timer', 'tk.pause': function (n) { return 'Stop for today · ' + n + ' points'; },
+  'tk.yours': 'Your task', 'tk.yoursFrom': function (c) { return 'Your task from ' + c; }, 'tk.subs': 'Subtasks',
+  'tk.reached': 'Goal reached. You can keep going or stop.', 'tk.of': function (c) { return 'of ' + c; },
+  'tk.skipsLeft': function (n) { return n + (n === 1 ? ' switch left today' : ' switches left today'); }, 'tk.noSkips': 'No more switches today',
+  'tk.edit': 'Edit this task', 'tk.allAgain': 'Back to all categories',
+  'sub.counts': 'The day counts, your plant is watered.',
+  'sub.week': function (n) { return 'Week streak complete, +' + n + ' bonus points.'; },
+  'sub.month': function (n) { return 'Month streak complete, +' + n + ' bonus points.'; }
+}
+};
+setLang('de');
+/*END*/
+
+var KEY = 'nur-eine-v1', LANG_KEY = 'plantyman-lang', langPref = '';
+try { langPref = localStorage.getItem(LANG_KEY) || ''; } catch (e) {}
+setLang(langPref || langFor(navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]));
+document.documentElement.lang = LANG;
+var LOCALE = t('locale');
+var state = freshState();
+try { var raw = localStorage.getItem(KEY); if (raw) state = Object.assign(freshState(), JSON.parse(raw)); } catch (e) {}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+if (state.onboarded === undefined) state.onboarded = !!raw;
+if (state.tipsSeen === undefined) state.tipsSeen = !!raw && state.points > 0;
+
+state.tasks.forEach(function (t) { if (t.done) { var k = dayKey(new Date(t.done)); if (state.doneDays.indexOf(k) < 0) state.doneDays.push(k); } });
+if (!state.catsV) {
+  if (raw) {
+    if (!state.tasks.some(function (t) { return inCat(t, 'Uni/Schule'); })) state.cats = state.cats.filter(function (c) { return c !== 'Uni/Schule'; });
+    ['Finanzen', 'Sonstiges'].forEach(function (c) { if (state.cats.indexOf(c) < 0) state.cats.push(c); });
+  }
+  state.catsV = 2;
+}
+var SKINS = [['hell', t('skin.hell')], ['dunkel', t('skin.dunkel')], ['wald', t('skin.wald')]];
+if (!SKINS.some(function (s) { return s[0] === state.skin; })) state.skin = 'hell';
+function applySkin() { document.documentElement.setAttribute('data-skin', state.skin); }
+function trophyIcon() { return '<svg class="trophy" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8.5 20h7"/></svg>'; }
+if (state.onboarded && !state.seeded && !state.tasks.length) {
+  var n = Date.now();
+  state.tasks = [
+    { id: 'ex1', text: t('ex1'), prio: 'mid', created: n, done: null, example: true, subs: [] },
+    { id: 'ex2', text: t('ex2'), prio: 'high', created: n + 1, done: null, example: true, subs: [] },
+    { id: 'ex3', text: t('ex3'), prio: 'none', created: n + 2, done: null, example: true, subs: [] }
+  ];
+  state.seeded = true;
+}
+
+if (state.testMonth) toggleTestMonth(new Date());
+if (!state.remind) state.remind = { on: false, time: '18:00' };
+if (!state.remind.late) state.remind.late = '22:00';
+
+var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+function plug(n) { return NATIVE && window.Capacitor.Plugins ? window.Capacitor.Plugins[n] : null; }
+var REM_DAYS = 30, remMsg = '', undo = null, bak = null;
+/* Up to three notifications per day for the next REM_DAYS days (see reminderPlan); today's are dropped once a task is done. Re-planned on every start and change. */
+function syncReminders(ask) {
+  var ln = plug('LocalNotifications'); if (!ln) return;
+  var ids = []; for (var i = 1; i <= REM_DAYS * 3; i++) ids.push({ id: i });
+  var p = ln.cancel({ notifications: ids }).catch(function () {});
+  if (!state.remind.on) return;
+  p.then(function () { return ask ? ln.requestPermissions() : ln.checkPermissions(); }).then(function (r) {
+    if (!r || r.display !== 'granted') {
+      remMsg = t('rem.denied');
+      if (ask) state.remind.on = false;
+      if (screen === 'all') render(); else save();
+      return;
+    }
+    remMsg = '';
+    var list = reminderPlan(state, new Date(), state.remind.late, REM_DAYS).map(function (r) {
+      return { id: r.id, title: 'Plantyman', body: r.body, schedule: { at: r.at.toISOString(), allowWhileIdle: true } };
+    });
+    if (list.length) return ln.schedule({ notifications: list });
+  }).catch(function () {});
+}
+/* In the installed app the end of the timer is announced by a notification, so it is heard with the phone locked. */
+var TIMER_NOTE = 99;
+function timerNote(on) {
+  var ln = plug('LocalNotifications'); if (!ln) return;
+  var p = ln.cancel({ notifications: [{ id: TIMER_NOTE }] }).catch(function () {});
+  noteOn = false;
+  if (!on || !state.sound || !state.timer) return;
+  var at = new Date(state.timer.start + timerMs(state)), m = timerMin(state);
+  noteOn = true;
+  p.then(function () { return ln.requestPermissions(); }).then(function (r) {
+    if (!r || r.display !== 'granted' || at <= new Date()) return;
+    return ln.schedule({ notifications: [{ id: TIMER_NOTE, title: 'Plantyman', body: t('timerNote', m), schedule: { at: at.toISOString(), allowWhileIdle: true } }] });
+  }).catch(function () {});
+}
+var actx = null;
+function tone(seq) {
+  if (!state.sound) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    var t0 = actx.currentTime + 0.02;
+    seq.forEach(function (f, i) {
+      var o = actx.createOscillator(), g = actx.createGain(), st = t0 + i * 0.22;
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, st); g.gain.exponentialRampToValueAtTime(0.25, st + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, st + 0.42);
+      o.connect(g); g.connect(actx.destination); o.start(st); o.stop(st + 0.45);
+    });
+  } catch (e) {}
+}
+function snap(kind, label) { undo = { kind: kind, label: label || '', snap: JSON.stringify(state) }; }
+function backupText() { return JSON.stringify({ app: 'plantyman', v: 1, exported: new Date().toISOString(), state: state }); }
+function parseBackup(text) {
+  try { var o = JSON.parse(String(text).trim()); if (o && o.app === 'plantyman' && o.state && Array.isArray(o.state.tasks)) return o; } catch (e) {}
+  return null;
+}
+function shareBackup(text) {
+  var fs = plug('Filesystem'), sh = plug('Share'); if (!fs || !sh) return;
+  fs.writeFile({ path: t('bak.file') + '-' + dayKey(new Date()) + '.json', data: text, directory: 'CACHE', encoding: 'utf8' })
+    .then(function (r) { return sh.share({ title: t('bak.shareTitle'), url: r.uri }); }).catch(function () {});
+}
+function bakPanel() {
+  if (!bak) return '';
+  if (bak.mode === 'out') return '<textarea id="baktext" readonly rows="5" aria-label="' + t('bak.textLabel') + '">' + esc(bak.text) + '</textarea>' +
+    '<div><button class="btn small" data-act="bakcopy">' + t('bak.copy') + '</button></div>' +
+    '<p class="note" id="bakmsg">' + (NATIVE ? t('bak.outNative') : t('bak.outWeb')) + '</p>';
+  var h = '<label class="field"><span>' + t('bak.chooseFile') + '</span><input type="file" id="bakfile" accept=".json,.txt,application/json,text/plain"></label>' +
+    '<label class="field"><span>' + t('bak.paste') + '</span><textarea id="bakpaste" rows="4">' + esc(bak.text) + '</textarea></label>' +
+    (bak.err ? '<p class="hint">' + bak.err + '</p>' : '');
+  if (!bak.parsed) return h + '<div><button class="btn small" data-act="bakcheck">' + t('bak.restore') + '</button></div>';
+  var st = bak.parsed.state, open = st.tasks.filter(function (t) { return !t.done; }).length, when = new Date(bak.parsed.exported);
+  return h + '<p class="hint">' + t('bak.summary', isNaN(when) ? '' : when.toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }), open, st.points || 0) + '</p>' +
+    '<div class="row"><button class="btn small" data-act="bakcancel">' + t('cancel') + '</button><button class="btn small primary" data-act="bakdo">' + t('bak.replace') + '</button></div>';
+}
+function checkBackup() { bak.parsed = parseBackup(bak.text); bak.err = bak.parsed ? '' : t('bak.invalid'); }
+
+var setTab = 'allg';
+var obStep = 0, obTest = false, obForm = false, obCount = 0, revealNext = false;
+var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+var SPROUT = '<svg class="sprout" viewBox="0 0 24 24" aria-hidden="true"><path class="st" d="M12 21v-9"/><path class="lf" d="M12 13C12 8 8.5 5.5 4 5.5 4 10 7 13 12 13z"/><path class="lf2" d="M12 11c0-4 2.8-6.5 7-6.5 0 4-2.6 6.5-7 6.5z"/></svg>';
+var screen = state.onboarded ? 'home' : 'welcome', justDone = null, editId = null, backTo = 'home', calOff = 0, draft = newDraft();
+var noOther = false, tasksFrom = 'all', howFrom = 'all', plantFrom = 'home', shopFrom = 'home', noteOn = false, noteOpen = false;
+var FEEDBACK_MAIL = 'plantieman@gmail.com';
+var SITE_URL = 'https://plantieman.github.io/';
+var STORE_URL = 'https://play.google.com/store/apps/details?id=de.plantyman.app';
+/* Google's own rating dialog, asked once in the app: after a finished task, once someone has used Plantyman on 3 days and finished 5 tasks.
+   Google decides whether the dialog really appears; nothing tells us whether a rating was given. */
+var REVIEW_DAYS = 3, REVIEW_DONE = 5;
+function askReviewLater() {
+  var r = plug('InAppReview');
+  if (!r || state.reviewAsked) return;
+  if (state.activeDays.length < REVIEW_DAYS || state.tasks.filter(function (x) { return x.done; }).length < REVIEW_DONE) return;
+  state.reviewAsked = Date.now(); save(); track('review_ask');
+  setTimeout(function () { try { r.requestReview().catch(function () {}); } catch (e) {} }, 1500);
+}
+/* Anonymous usage statistics, only in the installed app: which features are used (draw, start, done ...), never task texts.
+   Each install has a random id. Events go to Plantyman's own database (Supabase, Frankfurt); the key below can only add rows, not read them.
+   On by default, can be switched off in the settings; then nothing is sent and the queue is dropped. */
+var STATS_URL = 'https://njxzxiisvkiblhxmpcyw.supabase.co/rest/v1/events', STATS_KEY = 'sb_publishable_yY38aOqTLQq5gmZJCSdMAw_jkTYkKbT', QKEY = 'plantyman-q';
+var appVersion = '', evq = [], flushT = null, flushing = false, lastOpen = 0;
+function newId() {
+  try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
+}
+if (state.share === undefined) state.share = true;
+if (!state.iid) { state.iid = newId(); save(); }
+try { evq = JSON.parse(localStorage.getItem(QKEY) || '[]'); if (!Array.isArray(evq)) evq = []; } catch (e) { evq = []; }
+function keepQueue() { try { if (evq.length) localStorage.setItem(QKEY, JSON.stringify(evq)); else localStorage.removeItem(QKEY); } catch (e) {} }
+function track(ev, p) {
+  if (!NATIVE || !state.share) return;
+  evq.push({ iid: state.iid, ev: ev, day: dayKey(new Date()), v: appVersion || null, lang: LANG, p: p || null });
+  if (evq.length > 300) evq = evq.slice(-300);
+  keepQueue(); clearTimeout(flushT); flushT = setTimeout(flush, 4000);
+}
+function flush() {
+  if (flushing || !state.share || !evq.length || !window.fetch) return;
+  var min = addDays(dayKey(new Date()), -1);
+  evq = evq.filter(function (x) { return x.day >= min; });
+  var batch = evq.slice(0, 50); if (!batch.length) { keepQueue(); return; }
+  flushing = true;
+  fetch(STATS_URL, { method: 'POST', headers: { apikey: STATS_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(batch) })
+    .then(function (r) { if (r.ok || (r.status >= 400 && r.status < 500)) { evq = evq.slice(batch.length); keepQueue(); return r.ok && evq.length; } })
+    .catch(function () {})
+    .then(function (more) { flushing = false; if (more) flushT = setTimeout(flush, 1000); });
+}
+function trackOpen() { var n = Date.now(); if (n - lastOpen < 30 * 60000) return; lastOpen = n; track('open'); }
+function setShare(on) { state.share = on; if (!on) { evq = []; keepQueue(); clearTimeout(flushT); } save(); }
+var calSel = null, subsOpen = false, subMsg = '', calSlide = '', swipe = null;
+var view = document.getElementById('view'), nav = document.getElementById('nav');
+var PRIO_LABEL = { high: t('prio.high'), mid: t('prio.mid'), low: t('prio.low') };
+var REP_LABEL = { day: t('rep.day'), week: t('rep.week'), month: t('rep.month') };
+var WD_SHORT = t('wdShort');
+function repText(x) { var wd = weekDays(x); return wd ? t('rep.days', wd.map(function (d) { return WD_SHORT[d - 1]; }).join(', ')) : REP_LABEL[x.rep]; }
+
+function esc(x) { return String(x).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function subs(t) { return t.subs || (t.subs = []); }
+function dayDiff(a, b) { return Math.round((parseKey(a) - parseKey(b)) / 864e5); }
+function shortDate(k) { return parseKey(k).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' }); }
+function dueChip(x) {
+  if (!x.due || x.done || !state.day) return '';
+  var n = dayDiff(x.due, state.day);
+  return '<span class="chip ' + (n < 0 ? 'high' : n === 0 ? 'mid' : 'ex') + '">' + (n < 0 ? t('due.since', shortDate(x.due)) : n === 0 ? t('due.today') : n === 1 ? t('due.tomorrow') : t('due.on', shortDate(x.due))) + '</span>';
+}
+function dueField() {
+  return '<div class="field"><span class="legend">' + t('form.due') + '</span><div class="addrow"><input type="date" id="taskdue" aria-label="' + t('form.dueLabel') + '" value="' + esc(draft.due) + '">' +
+    '<button class="btn small" type="button" data-act="cleardue" id="cleardue"' + (draft.due ? '' : ' hidden') + '>' + t('remove') + '</button></div></div>';
+}
+function newDraft(t, due) {
+  return t ? { text: t.text, prio: t.prio, cats: catsOf(t).slice(), rep: t.rep || '', note: t.note || '', due: t.due || '', days: (t.days || []).slice(),
+      subs: subs(t).map(function (x) { return { id: x.id, text: x.text, done: !!x.done }; }) }
+    : { text: '', prio: 'none', cats: [], rep: '', note: '', subs: [], due: due || '', days: [] };
+}
+function chips(x) {
+  return catsOf(x).map(function (c) { return '<span class="chip cat">' + esc(c) + '</span>'; }).join('') + (PRIO_LABEL[x.prio] ? '<span class="chip ' + x.prio + '">' + PRIO_LABEL[x.prio] + '</span>' : '') +
+    dueChip(x) + (REP_LABEL[x.rep] ? '<span class="chip ex">' + repText(x) + '</span>' : '') +
+    (x.example ? '<span class="chip ex">' + t('example') + '</span>' : '');
+}
+function leaves(y, size) {
+  return '<ellipse class="leaf" cx="' + (60 - size) + '" cy="' + y + '" rx="' + size + '" ry="' + size * 0.55 + '" transform="rotate(-25 ' + (60 - size) + ' ' + y + ')"/>' +
+    '<ellipse class="leaf2" cx="' + (60 + size) + '" cy="' + y + '" rx="' + size + '" ry="' + size * 0.55 + '" transform="rotate(25 ' + (60 + size) + ' ' + y + ')"/>';
+}
+/* The plant at a stage, in the chosen pot and leaf colour (or the ones given, for previews in the shop). */
+function plant(stage, watered, potId, leafId) {
+  var g = '', pt = look(potId || state.pot) || LOOKS[0], lf = look(leafId || state.leaf) || {};
+  if (stage === 0) g = '<ellipse class="seed" cx="60" cy="98" rx="6" ry="4"/>';
+  else if (stage === 1) g = '<path class="stem" d="M60 102V90"/>' + leaves(88, 6);
+  else if (stage === 2) g = '<path class="stem" d="M60 102V72"/>' + leaves(86, 8) + leaves(72, 7);
+  else if (stage === 3) g = '<path class="stem" d="M60 102V52"/>' + leaves(88, 10) + leaves(72, 11) + leaves(54, 9);
+  else if (stage === 4) g = '<rect class="trunk" x="57" y="62" width="6" height="42" rx="3"/><circle class="leaf2" cx="45" cy="60" r="14"/><circle class="leaf2" cx="75" cy="60" r="14"/><circle class="leaf" cx="60" cy="48" r="20"/>';
+  else g = '<rect class="trunk" x="55" y="56" width="10" height="48" rx="4"/><circle class="leaf2" cx="38" cy="52" r="20"/><circle class="leaf2" cx="82" cy="52" r="20"/><circle class="leaf" cx="60" cy="34" r="26"/><circle class="leaf" cx="60" cy="58" r="20"/>';
+  var ground = pt.pot ? '<path d="M31 105h58l-6 14H37z" fill="' + pt.pot + '"/><rect x="26" y="98" width="68" height="9" rx="3" fill="' + pt.rim + '"/><ellipse class="soil" cx="60" cy="99" rx="30" ry="2.5"/>'
+    : '<ellipse class="soil" cx="60" cy="104" rx="40" ry="9"/>';
+  return '<svg class="plant" viewBox="0 0 120 120" role="img" aria-label="' + STAGES[stage].name + '"' +
+    (lf.leaf ? ' style="--leaf:' + lf.leaf + ';--leaf2:' + lf.leaf2 + ';--stem:' + lf.stem + '"' : '') + '>' +
+    (watered ? '<circle class="halo" cx="60" cy="62" r="56"/>' : '') + ground + g + '</svg>';
+}
+function prioSeg(sel) {
+  return '<div class="field"><span class="legend">' + t('form.prio') + '</span><fieldset class="seg">' +
+    ['none', 'low', 'mid', 'high'].map(function (p) {
+      var v = [p, t('prio.' + p)];
+      return '<label><input type="radio" name="prio" id="prio-' + v[0] + '" value="' + v[0] + '"' + (v[0] === sel ? ' checked' : '') + '>' + v[1] + '</label>';
+    }).join('') + '</fieldset></div>';
+}
+function catSeg(sel) {
+  return '<div class="field"><span class="legend">' + t('form.cats') + '</span><fieldset class="pills">' +
+    state.cats.map(function (c, i) {
+      return '<label><input type="checkbox" name="cat" id="cat-' + i + '" value="' + esc(c) + '"' + (sel.indexOf(c) >= 0 ? ' checked' : '') + '>' + esc(c) + '</label>';
+    }).join('') + '</fieldset><div class="addrow"><input type="text" id="formcat" maxlength="24" placeholder="' + t('cat.own') + '" autocomplete="off">' +
+    '<button class="btn small" type="button" data-act="addcatform">' + t('cat.add') + '</button></div></div>';
+}
+function repSeg() {
+  return '<div class="field"><label class="check"><input type="checkbox" id="repon"' + (draft.rep ? ' checked' : '') + '><span>' + t('form.rep') + '</span></label>' +
+    (draft.rep ? '<fieldset class="seg three">' + [['day', t('form.repDay')], ['week', t('form.repWeek')], ['month', t('form.repMonth')]].map(function (r) {
+      return '<label><input type="radio" name="rep" id="rep-' + r[0] + '" value="' + r[0] + '"' + (draft.rep === r[0] ? ' checked' : '') + '>' + r[1] + '</label>';
+    }).join('') + '</fieldset>' + (draft.rep === 'week' ? '<span class="legend">' + t('form.which') + '</span><fieldset class="pills">' + WD_SHORT.map(function (w, i) {
+      return '<label><input type="checkbox" name="repday" id="repday-' + (i + 1) + '" value="' + (i + 1) + '"' + (draft.days.indexOf(i + 1) >= 0 ? ' checked' : '') + '>' + w + '</label>';
+    }).join('') + '</fieldset>' : '') + '<p class="note">' + (draft.rep === 'week' ? (draft.days.length ? t('form.repDaysNote') : t('form.repWeekNote'))
+      : draft.rep === 'month' ? t('form.repMonthNote') : t('form.repNote')) + '</p>' : '') + '</div>';
+}
+function subField() {
+  return '<div class="field"><span class="legend">' + t('form.subs') + '</span>' +
+    (draft.subs.length ? '<ul class="sublist" style="margin-top:0">' + draft.subs.map(function (s) {
+      return '<li><label><input type="checkbox" data-sub="' + s.id + '"' + (s.done ? ' checked' : '') + '><span>' + esc(s.text) + '</span></label>' +
+        '<button class="linkbtn" type="button" data-act="delsub" data-id="' + s.id + '">' + t('remove') + '</button></li>';
+    }).join('') + '</ul>' : '') +
+    '<div class="addrow"><input type="text" id="subtext" maxlength="100" placeholder="' + t('form.subPh') + '" autocomplete="off">' +
+    '<button class="btn small" type="button" data-act="addsub">' + t('add') + '</button></div></div>';
+}
+function noteField() {
+  return '<details class="steps" id="notebox"' + (noteOpen ? ' open' : '') + '><summary>' + t(draft.note ? 'note' : 'form.noteAdd') + '</summary>' +
+    '<textarea class="plain" id="tasknote" maxlength="500" rows="3" aria-label="' + t('note') + '" placeholder="' + t('form.notePh') + '" style="margin-top:10px">' + esc(draft.note) + '</textarea></details>';
+}
+function taskForm() {
+  var et = editId ? byId(state, editId) : null, dup = isDup(state, draft.text, editId);
+  var h = '<form id="taskform" class="card"><label class="field"><span>' + (et ? t('form.edit') : obForm ? t('form.ob') : t('form.new')) + '</span>' +
+    '<input type="text" id="tasktext" maxlength="140" placeholder="' + t('form.ph') + '" autocomplete="off" required value="' + esc(draft.text) + '"></label>' +
+    '<p class="hint" id="duphint"' + (dup ? '' : ' hidden') + '>' + t('form.dup') + '</p>' +
+    dueField() + prioSeg(draft.prio) + catSeg(draft.cats) + repSeg();
+  h += subField() + noteField();
+  if (obForm && !obCount) return h + '<button class="btn primary" type="submit" id="savebtn">' + t(dup ? 'saveAnyway' : 'save') + '</button>' +
+    '<button class="linkbtn" type="button" data-act="obdone" style="align-self:center">' + t('form.later') + '</button></form>';
+  return h + '<div class="row"><button class="btn" type="button" data-act="cancel">' + t('cancel') + '</button><button class="btn primary" type="submit" id="savebtn">' + t(dup ? 'saveAnyway' : 'save') + '</button></div></form>';
+}
+function barRows(rows) {
+  var max = Math.max.apply(null, rows.map(function (r) { return r[1]; }).concat([1]));
+  return '<div class="bars">' + rows.map(function (r) {
+    return '<span class="lab">' + esc(r[0]) + '</span><span class="track" title="' + esc(r[0]) + ': ' + r[1] + '"><span class="fill' + (r[1] ? '' : ' zero') + '" style="width:' + (r[1] / max * 100) + '%"></span></span><span class="val">' + r[1] + '</span>';
+  }).join('') + '</div>';
+}
+function tile(v, l) { return '<div class="tile"><b>' + v + '</b><span>' + l + '</span></div>'; }
+function stats(now) {
+  var d = statsData(state, now), streak = streakNow(state, now);
+  if (!d.done && !d.days) return '<p class="note">' + t('st.empty') + '</p>';
+  var cats = Object.keys(d.byCat).sort(function (a, b) { return d.byCat[b] - d.byCat[a]; }).map(function (c) { return [c || t('st.noCat'), d.byCat[c]]; });
+  var wd = WD_SHORT.map(function (w, i) { return [w, d.byWd[i]]; });
+  var h = '<div class="tiles">' + tile(d.done, t('st.done')) + tile(state.points, t('st.points')) +
+    tile(streak, t('st.streak')) + tile(Math.max(d.longest, streak, state.best || 0), t('st.longest')) +
+    tile(d.avg.toFixed(1).replace('.', t('decimal')), t('st.avg')) + tile(d.days, t('st.days', d.days)) +
+    tile(state.weeks.length, t('weekStreaks', state.weeks.length)) + tile(state.trophies.length, t('monthStreaks', state.trophies.length)) +
+    tile(state.freezes, t('st.freezes', state.freezes)) + tile(state.freezeDays.length, t('st.freezesUsed')) + '</div>';
+  if (d.bestDay) h += '<p class="note">' + t('st.bestDay', parseKey(d.bestDay).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long' }), d.bestCount) + '</p>';
+  if (cats.length) h += '<div class="section"><h2>' + t('st.byCat') + '</h2>' + barRows(cats) + '</div>';
+  if (d.done) h += '<div class="section"><h2>' + t('st.byWd') + '</h2>' + barRows(wd) + '</div>';
+  if (d.oldest) h += '<p class="note">' + t('st.oldest', esc(d.oldest.text), d.oldestDays) + '</p>';
+  return h;
+}
+function prevMonth(now) { return new Date(now.getFullYear(), now.getMonth() - 1, 1); }
+function toggleTestMonth(now) {
+  var f = prevMonth(now), ym = dayKey(f).slice(0, 7);
+  if (state.testMonth) {
+    state.doneDays = state.doneDays.filter(function (k) { return state.testMonth.days.indexOf(k) < 0; });
+    state.trophies = state.trophies.filter(function (k) { return k !== state.testMonth.ym; });
+    state.points = Math.max(0, state.points - MONTH_BONUS); state.testMonth = null; return;
+  }
+  if (state.trophies.indexOf(ym) >= 0) return;
+  var n = new Date(f.getFullYear(), f.getMonth() + 1, 0).getDate(), added = [];
+  for (var d = 1; d <= n; d++) { var k = dayKey(new Date(f.getFullYear(), f.getMonth(), d)); if (state.doneDays.indexOf(k) < 0) { state.doneDays.push(k); added.push(k); } }
+  state.trophies.push(ym); state.points += MONTH_BONUS; state.testMonth = { ym: ym, days: added };
+}
+function calendar(now) {
+  var first = new Date(now.getFullYear(), now.getMonth() + calOff, 1), today = dayKey(now);
+  var doneSet = {}; state.doneDays.forEach(function (k) { doneSet[k] = 1; });
+  var dueSet = {}; undone(state).forEach(function (t) { if (t.due) dueSet[t.due] = (dueSet[t.due] || 0) + 1; });
+  var won = state.trophies.indexOf(dayKey(first).slice(0, 7)) >= 0;
+  var start = state.activeDays.slice().sort()[0] || today;
+  var lead = (first.getDay() + 6) % 7, n = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate(), cells = '', count = 0;
+  WD_SHORT.forEach(function (w) { cells += '<span class="wd">' + w + '</span>'; });
+  for (var i = 0; i < lead; i++) cells += '<span></span>';
+  for (var d = 1; d <= n; d++) {
+    var k = dayKey(new Date(first.getFullYear(), first.getMonth(), d)), cls = 'day', lab = [];
+    if (doneSet[k]) { cls += ' done'; lab.push(t('cal.lDone')); count++; }
+    else if (k >= start && k < today) { cls += ' missed'; lab.push(t('cal.lMissed')); }
+    if (state.freezeDays.indexOf(k) >= 0) { cls += ' fz'; lab.push(t('cal.lFreeze')); }
+    if (k === today) { cls += ' today'; lab.push(t('today')); }
+    if (dueSet[k]) lab.push(t('cal.lDue', dueSet[k]));
+    cells += '<button type="button" class="' + cls + (k === calSel ? ' sel' : '') + '" data-act="calday" data-day="' + k + '" aria-pressed="' + (k === calSel) + '" aria-label="' + t('cal.dayLabel', d, lab.join(', ')) + '">' + d + (dueSet[k] ? '<i class="duedot"></i>' : '') + '</button>';
+  }
+  var slide = calSlide ? ' slide-' + calSlide : ''; calSlide = '';
+  return '<section class="card calcard' + slide + '"><div class="calhead"><button class="iconbtn" data-act="calprev" aria-label="' + t('cal.prev') + '"><svg viewBox="0 0 24 24" stroke-width="2.2"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>' +
+    '<p class="streak" style="font-size:1.25rem">' + first.toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' }) + '</p>' +
+    '<button class="iconbtn" data-act="calnext" aria-label="' + t('cal.next') + '"' + (calOff >= 12 ? ' disabled style="opacity:.3"' : '') + '><svg viewBox="0 0 24 24" stroke-width="2.2"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></button></div>' +
+    '<div class="cal">' + cells + '</div>' +
+    '<div class="key"><span><i class="day done">.</i>' + t('cal.kDone') + '</span><span><i class="day missed">.</i>' + t('cal.kMissed') + '</span><span><i class="day fz">.</i>' + t('cal.kFreeze') + '</span><span><i class="day"><i class="duedot"></i></i>' + t('cal.kDue') + '</span></div>' +
+    (won ? '<span class="plus" style="align-self:center">' + trophyIcon() + ' ' + t('monthStreaks', 1) + ' · ' + t('plusPoints', MONTH_BONUS) + '</span>' : '') +
+    '<p class="note">' + t('cal.note', count, n, MONTH_BONUS, WEEK_BONUS) + '</p></section>' + dayPanel(now, doneSet, start);
+}
+/* What happened or is planned on the day selected in the calendar. */
+function dayPanel(now, doneSet, start) {
+  if (!calSel) return '<p class="note">' + t('day.tap') + '</p>';
+  var today = dayKey(now), fz = state.freezeDays.indexOf(calSel) >= 0;
+  var done = state.tasks.filter(function (t) { return t.done && dayKey(new Date(t.done)) === calSel; }).sort(function (a, b) { return a.done - b.done; });
+  var due = undone(state).filter(function (t) { return t.due === calSel; });
+  var h = '<div class="section"><h2>' + parseKey(calSel).toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }) + (calSel === today ? ' · ' + t('today') : '') + '</h2>';
+  if (fz) h += '<p class="note">' + t('day.freeze') + '</p>';
+  if (done.length) h += '<p class="sub">' + t('done') + '</p><ul class="list">' + done.map(function (x) {
+    return '<li><span class="t"><span class="mark">' + esc(x.text) + '</span></span><span class="note" style="flex:none">' + t('clock', new Date(x.done).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })) + '</span></li>';
+  }).join('') + '</ul>';
+  else if (doneSet[calSel]) h += '<p class="note">' + t('day.counts') + '</p>';
+  else if (!fz && calSel < today && calSel >= start) h += '<p class="note">' + t('day.nothing') + '</p>';
+  if (due.length) h += '<p class="sub">' + t('day.due') + '</p><ul class="list">' + due.map(function (x) {
+    return '<li><span class="t">' + esc(x.text) + '</span><span class="ops"><button class="linkbtn" data-act="edit" data-id="' + x.id + '">' + t('edit') + '</button></span></li>';
+  }).join('') + '</ul>';
+  else if (calSel >= today && !done.length) h += '<p class="note">' + t('day.empty') + '</p>';
+  if (calSel >= today) h += '<div><button class="btn small" data-act="addday">' + t('day.add') + '</button></div>';
+  return h + '</div>';
+}
+function todayDone() {
+  var d = state.day;
+  return state.tasks.filter(function (t) { return t.done && dayKey(new Date(t.done)) === d; }).length;
+}
+function streakLine(n) {
+  return n ? t('grown', n) : t('seedWaits');
+}
+function homeNote(n, watered, now) {
+  if (!watered && state.fellBack === dayKey(now)) return t('hn.fell', STAGES[stageFor(n)].name);
+  if (!n) return t('hn.seed');
+  if (!watered && state.freezeDays.indexOf(yesterdayKey(now)) >= 0) return t('hn.freeze');
+  if (!watered) return t('hn.needs');
+  var nx = STAGES[stageFor(n) + 1];
+  if (!nx) return t('hn.grown');
+  return t('hn.next', nx.from - n, nx.name);
+}
+function render() {
+  var now = new Date();
+  applySkin();
+  rollover(state, now);
+  if (screen === 'task' && !justDone) ensureCurrent(state, Math.random);
+  save();
+  var open = openTasks(state), streak = streakNow(state, now), watered = doneToday(state, now);
+  nav.hidden = screen === 'all' || screen === 'welcome' || obForm;
+  document.getElementById('calbtn').hidden = screen === 'cal' || screen === 'welcome' || obForm;
+  document.getElementById('back').hidden = !backTarget();
+  var h = '';
+
+  if (screen === 'welcome' && obStep === 0) {
+    h = '<section class="card home"><p class="claim">' + t('claim') + '</p>' + plant(0, false) +
+      '<p class="lead">' + t('ob.lead') + '</p>' +
+      '<p class="note">' + t('ob.one') + '</p>' +
+      '<div class="actions"><button class="btn primary draw" data-act="obnext">' + t('next') + '</button></div></section>';
+  } else if (screen === 'welcome' && obStep === 1) {
+    h = '<section class="card"><p class="lead">' + t('how') + '</p><ol class="how">' +
+      '<li>' + t('ob.s1') + '</li>' +
+      '<li>' + t('ob.s2') + '</li>' +
+      '<li>' + t('ob.s3', minText(timerMin(state))) + '</li></ol>' +
+      '<div class="actions">' + (obTest ? '<button class="btn primary" data-act="obend">' + t('ob.backHow') + '</button>' : '<button class="btn primary draw" data-act="obgo">' + t('ob.go') + '</button>') + '</div></section>';
+  } else if (screen === 'welcome') {
+    h = '<section class="card home"><p class="lead">' + t('ob.added', obCount) + '</p>' +
+      '<p class="note">' + t('ob.more') + '</p>' +
+      '<div class="actions"><button class="btn primary" data-act="obdone">' + t('ob.toHome') + '</button>' +
+      '<button class="btn" data-act="obgo">' + t('ob.another') + '</button></div></section>';
+  } else if (screen === 'drawing') {
+    h = '<section class="card back-card">' + SPROUT + '<p class="note" role="status">' + t('drawing') + '</p></section>';
+  } else if (screen === 'form') {
+    h = taskForm();
+  } else if (screen === 'tasks') {
+    var done = state.tasks.filter(function (t) { return t.done; }).sort(function (a, b) { return b.done - a.done; });
+    h += '<p class="streak">' + t('allTasks') + '</p>' + (undo && (undo.kind === 'del' || undo.kind === 'tick') ? '<p class="hint">' + (undo.kind === 'del' ? t('tl.deleted', esc(undo.label)) : t('tl.ticked', esc(undo.label), undo.pts)) + ' <button class="linkbtn" data-act="undo">' + t('undo') + '</button></p>' : '') + '<div class="section"><h2>' + t('tl.open', open.length) + '</h2>' + (open.length ? '<p class="note">' + t('tl.tickHint') + '</p>' : '') + '<ul class="list">' +
+      (open.length ? open.map(function (x) {
+        var c = subs(x).length;
+        return '<li class="open"><button class="tick" data-act="tickdone" data-id="' + x.id + '" aria-label="' + t('tl.tickLabel', esc(x.text)) + '" title="' + t('tl.tickTitle') + '"></button><span class="t">' + esc(x.text) + chips(x) + (c ? '<span class="note">' + t('tl.subs', subCount(subs(x))) + '</span>' : '') + '</span>' +
+          '<span class="ops"><button class="linkbtn" data-act="edit" data-id="' + x.id + '">' + t('edit') + '</button>' +
+          '<button class="linkbtn" data-act="del" data-id="' + x.id + '">' + t('delete') + '</button></span></li>';
+      }).join('') : '<li><span class="t note">' + t('tl.none') + '</span></li>') + '</ul>' +
+      '<div><button class="btn small" data-act="add">' + t('addTaskPlus') + '</button></div></div>';
+    var waiting = undone(state).filter(function (t) { return open.indexOf(t) < 0; });
+    if (waiting.length) h += '<div class="section"><h2>' + t('tl.waiting', waiting.length) + '</h2><ul class="list">' + waiting.map(function (x) {
+      return '<li><span class="t">' + esc(x.text) + chips(x) + '<span class="note">' + t('tl.from', parseKey(x.from).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long' })) + '</span></span>' +
+        '<span class="ops"><button class="linkbtn" data-act="edit" data-id="' + x.id + '">' + t('edit') + '</button><button class="linkbtn" data-act="del" data-id="' + x.id + '">' + t('delete') + '</button></span></li>';
+    }).join('') + '</ul></div>';
+    h += '<div class="section"><h2>' + t('tl.done', done.length) + '</h2><ul class="list">' +
+      (done.length ? done.slice(0, 30).map(function (x) {
+        return '<li><span class="t"><span class="mark">' + esc(x.text) + '</span></span><span class="note" style="flex:none">' + new Date(x.done).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' }) + '</span></li>';
+      }).join('') : '<li><span class="t note">' + t('tl.doneEmpty') + '</span></li>') + '</ul></div>';
+  } else if (screen === 'cal') {
+    h += calendar(now);
+  } else if (screen === 'all') {
+    var doneN = state.tasks.filter(function (t) { return t.done; }).length;
+    h += '<p class="streak">' + t('settings') + '</p><fieldset class="seg two">' +
+      '<label><input type="radio" name="settab" id="settab-allg" value="allg"' + (setTab === 'allg' ? ' checked' : '') + '>' + t('set.general') + '</label>' +
+      '<label><input type="radio" name="settab" id="settab-stat" value="stat"' + (setTab === 'stat' ? ' checked' : '') + '>' + t('set.stats') + '</label></fieldset>';
+    if (setTab === 'stat') h += stats(now); else {
+    h += '<div class="actions"><button class="btn" data-act="showtasks">' + t('set.showAll', open.length) + '</button>' +
+      '<button class="btn" data-act="how">' + t('how') + '</button></div>';
+    h += '<div class="section"><h2>' + t('set.draw') + '</h2><fieldset class="seg two">' +
+      '<label><input type="radio" name="mode" id="mode-prio" value="prio"' + (state.mode === 'prio' ? ' checked' : '') + '>' + t('set.byPrio') + '</label>' +
+      '<label><input type="radio" name="mode" id="mode-random" value="random"' + (state.mode === 'random' ? ' checked' : '') + '>' + t('set.random') + '</label></fieldset></div>';
+    h += '<div class="section"><h2>' + t('set.timer') + '</h2><label class="inline"><span>' + t('set.timerMin') + '</span><input type="number" id="timermin" min="1" max="180" step="1" inputmode="numeric" value="' + timerMin(state) + '"></label>' +
+      '<label class="check"><input type="checkbox" id="soundon"' + (state.sound ? ' checked' : '') + '><span>' + t('set.sound') + '</span></label>' +
+      '<p class="note">' + t('set.timerNote') + (NATIVE ? ' ' + t('set.timerNative') : '') + '</p></div>';
+    h += '<div class="section"><h2>' + t('set.lang') + '</h2><fieldset class="pills">' + [['', t('set.langAuto')], ['de', 'Deutsch'], ['en', 'English']].map(function (o) {
+      return '<label><input type="radio" name="lang" id="lang-' + (o[0] || 'auto') + '" value="' + o[0] + '"' + (langPref === o[0] ? ' checked' : '') + '>' + o[1] + '</label>';
+    }).join('') + '</fieldset></div>';
+    h += '<div class="section"><h2>' + t('set.style') + '</h2><fieldset class="pills">' + SKINS.map(function (s) {
+      return '<label><input type="radio" name="skin" id="skin-' + s[0] + '" value="' + s[0] + '"' + (state.skin === s[0] ? ' checked' : '') + '>' + s[1] + '</label>';
+    }).join('') + '</fieldset></div>';
+    h += '<div class="section"><h2>' + t('set.cats') + '</h2><ul class="list">' +
+      (state.cats.length ? state.cats.map(function (c, i) {
+        var k = catCount(state, c, true);
+        return '<li><span class="t">' + esc(c) + '</span>' + (k ? '<span class="note">' + t('tasks', k) + '</span>'
+          : '<button class="linkbtn" data-act="delcat" data-i="' + i + '">' + t('remove') + '</button>') + '</li>';
+      }).join('') : '<li><span class="t note">' + t('set.noCats') + '</span></li>') + '</ul><p class="note">' + t('set.catsNote') + '</p>' +
+      '<div class="addrow"><input type="text" id="newcat" maxlength="24" placeholder="' + t('cat.own') + '" autocomplete="off">' +
+      '<button class="btn small" type="button" data-act="addcat">' + t('cat.add') + '</button></div></div>';
+    h += '<div class="section"><h2>' + t('freezesTitle') + '</h2><p class="note">' + t('set.freezes', state.freezes, MAX_FREEZES, FREEZES_PER_WEEK) + '</p></div>';
+    h += '<div class="section"><h2>' + t('set.remind') + '</h2>' + (NATIVE ?
+      '<label class="check"><input type="checkbox" id="remon"' + (state.remind.on ? ' checked' : '') + '><span>' + t('set.remOn') + '</span></label>' +
+      (state.remind.on ? '<label class="field"><span>' + t('set.remLate') + '</span><input type="time" id="remtime" value="' + esc(state.remind.late) + '"></label>' : '') +
+      '<p class="note">' + (remMsg || t('set.remNote')) + '</p>'
+      : '<p class="note">' + t('set.remWeb') + '</p>') + '</div>';
+    h += '<div class="section"><h2>' + t('set.backup') + '</h2><p class="note">' + t('set.backupNote') + '</p>' +
+      '<div class="row"><button class="btn small" data-act="bakout">' + t('set.bakOut') + '</button><button class="btn small" data-act="bakin">' + t('set.bakIn') + '</button></div>' + bakPanel() + '</div>';
+    h += '<div class="section"><h2>' + t('set.feedback') + '</h2><p class="note">' + t('set.fbNote', FEEDBACK_MAIL) + '</p>' +
+      '<div class="row"><a class="btn small" href="mailto:' + FEEDBACK_MAIL + '?subject=' + encodeURIComponent(t('set.fbSubject')) + '&amp;body=' + encodeURIComponent(t('set.fbBody')) + '"' + (NATIVE ? '' : ' target="_blank" rel="noopener"') + '>' + t('set.fbBtn') + '</a>' +
+      '<a class="btn small" href="' + STORE_URL + '"' + (NATIVE ? '' : ' target="_blank" rel="noopener"') + '>' + t('set.rateBtn') + '</a></div></div>';
+    var EXT = NATIVE ? '' : ' target="_blank" rel="noopener"';
+    h += '<div class="section"><h2>' + t('set.legal') + '</h2><p class="note">' + t('set.legalNote') + '</p>' +
+      (NATIVE ? '<label class="check"><input type="checkbox" id="shareon"' + (state.share ? ' checked' : '') + '><span>' + t('set.share') + '</span></label><p class="note">' + t('set.shareNote') + '</p>' : '') +
+      '<div class="row"><a class="btn small" href="' + SITE_URL + t('privacyPage') + '"' + EXT + '>' + t('set.privacy') + '</a><a class="btn small" href="' + SITE_URL + t('imprintPage') + '"' + EXT + '>' + t('set.imprint') + '</a></div></div>';
+    h += '<p class="stats">' + t('set.footer', state.activeDays.length, doneN, state.points) + '</p>';
+    }
+  } else if (screen === 'plant') {
+    var si = stageFor(streak), nxt = STAGES[si + 1], gap = nxt ? nxt.from - streak : 0;
+    h += '<section class="card home"><p class="claim">' + t('pl.title') + '</p>' + plant(si, watered) +
+      '<p class="streak">' + STAGES[si].name + '</p>' +
+      '<p class="note">' + t('pl.streak', streak) + ' ' + (nxt ? t('pl.toNext', gap, nxt.name) : t('pl.grown')) + '</p>' +
+      '<p class="note points">' + t('freezes', state.freezes) + ' · ' + t('weekStreaksN', state.weeks.length) +
+        ' · ' + t('monthStreaksN', state.trophies.length) + '</p></section>';
+    h += '<div class="section"><h2>' + t('pl.all') + '</h2><ul class="stages">' + STAGES.map(function (st, i) {
+      var left = st.from - streak;
+      return '<li class="' + (i === si ? 'here' : i < si ? 'past' : 'ahead') + '">' + plant(i, false) +
+        '<span><b>' + st.name + '</b><span class="when">' + (st.from ? t('pl.from', st.from) : t('pl.start')) + '</span></span>' +
+        '<span class="st8">' + (i === si ? t('pl.here') : i < si ? t('pl.reached') : t('pl.left', left)) + '</span></li>';
+    }).join('') + '</ul><p class="note">' + t('pl.note') + '</p>' +
+      '<div class="actions"><button class="btn" data-act="shop">' + t('pl.shop', state.points) + '</button></div>' +
+      (plantFrom === 'how' ? '' : '<div><button class="linkbtn" data-act="how">' + t('how') + '</button></div>') + '</div>';
+  } else if (screen === 'shop') {
+    var shopItem = function (l) {
+      var on = (l.kind === 'pot' ? state.pot : state.leaf) === l.id, own = owns(state, l.id), miss = l.price - state.points;
+      return '<li class="' + (on ? 'here' : '') + '">' + plant(3, false, l.kind === 'pot' ? l.id : state.pot, l.kind === 'leaf' ? l.id : state.leaf) +
+        '<span><b>' + l.name + '</b><span class="when">' + (l.price ? t('points', l.price) : t('sh.free')) + '</span></span>' +
+        (on ? '<span class="st8">' + t('sh.inUse') + '</span>' : own ? '<button class="btn small" data-act="uselook" data-id="' + l.id + '">' + t('sh.use') + '</button>'
+          : '<button class="btn small" data-act="buylook" data-id="' + l.id + '"' + (miss > 0 ? ' disabled>' + t('sh.missing', miss) : '>' + t('sh.unlock')) + '</button>') + '</li>';
+    };
+    h += '<p class="streak">' + t('shop') + '</p>' +
+      (undo && undo.kind === 'buy' ? '<p class="hint" role="status">' + t('sh.bought', esc(undo.label), undo.pts) + ' <button class="linkbtn" data-act="undo">' + t('undo') + '</button></p>' : '') +
+      '<section class="card home">' + plant(stageFor(streak), watered) + '<p class="streak points">' + t('points', state.points) + '</p>' +
+      '<p class="note">' + t('sh.intro') + '</p></section>' +
+      '<div class="section"><h2>' + t('sh.freeze') + '</h2><p class="note">' + t('sh.freezeNote', state.freezes, MAX_FREEZES) + '</p>' +
+      '<div><button class="btn small" data-act="buyfreeze"' + (canBuyFreeze(state) ? '>' + t('sh.buyFreeze', FREEZE_PRICE)
+        : state.freezes >= MAX_FREEZES ? ' disabled>' + t('sh.maxFreezes', MAX_FREEZES) : ' disabled>' + t('sh.freezeMissing', FREEZE_PRICE - state.points)) + '</button></div></div>' +
+      '<div class="section"><h2>' + t('sh.pots') + '</h2><ul class="stages">' + LOOKS.filter(function (l) { return l.kind === 'pot'; }).map(shopItem).join('') + '</ul></div>' +
+      '<div class="section"><h2>' + t('sh.leaves') + '</h2><ul class="stages">' + LOOKS.filter(function (l) { return l.kind === 'leaf'; }).map(shopItem).join('') + '</ul></div>';
+  } else if (screen === 'how') {
+    var sec = function (title, text) { return '<div class="section explain"><h2>' + title + '</h2><p>' + text + '</p></div>'; };
+    h += '<p class="streak">' + t('how') + '</p>' +
+      sec(t('hw.oneT'), t('hw.one', MAX_SKIPS)) +
+      sec(t('set.timer'), t('hw.timer', minText(timerMin(state)))) +
+      sec(t('hw.pointsT'), t('hw.points', BASE_POINTS, MIN_POINTS) +
+        (howFrom === 'shop' ? '' : ' <button class="linkbtn" data-act="shop">' + t('hw.toShop') + '</button>')) +
+      sec(t('hw.plantT'), t('hw.plant') +
+        (howFrom === 'plant' ? '' : ' <button class="linkbtn" data-act="plant">' + t('hw.allStages') + '</button>')) +
+      sec(t('freezesTitle'), t('hw.freezes', FREEZES_PER_WEEK, MAX_FREEZES)) +
+      sec(t('hw.streaksT'), t('hw.streaks', WEEK_BONUS, MONTH_BONUS)) +
+      '<div class="actions"><button class="btn" data-act="replay">' + t('hw.replay') + '</button></div>';
+  } else if (justDone) {
+    var c = todayDone();
+    h += '<section class="card done-card"><div class="eyebrow">' + (justDone.partial ? t('dn.timer', minText(justDone.min || timerMin(state))) : t('done')) + '</div>' +
+      '<p class="task">' + (justDone.partial ? esc(justDone.task.text) : '<span class="mark">' + esc(justDone.task.text) + '</span>') + '</p>' +
+      '<span class="plus">' + t('plusPoints', justDone.pts) + '</span>' +
+      (justDone.bonus ? '<span class="plus">' + trophyIcon() + ' ' + t('monthStreaks', 1) + ' · ' + t('plusBonus', justDone.bonus) + '</span>' : '') +
+      (justDone.wbonus ? '<span class="plus">' + t('weekStreaks', 1) + ' · ' + t('plusBonus', justDone.wbonus) + '</span>' : '') +
+      (justDone.first ? '<p class="hint">' + t('dn.tipPoints') + '</p>' +
+        '<p class="hint">' + t('dn.tipFreeze', state.freezes, FREEZES_PER_WEEK) + '</p>' : '') +
+      '<p class="note">' + (justDone.partial ? t('dn.partial') : c === 1 ? t('dn.watered', streakLine(streak)) : t('dn.nth', c)) + '</p>' +
+      '<div class="actions">' + (justDone.partial ? '<button class="btn" data-act="finish">' + t('dn.finish') + '</button>' : '') +
+      (open.length ? '<button class="btn primary" data-act="next">' + t('dn.next') + '</button>' : '') +
+      '<button class="btn' + (open.length ? '' : ' primary') + '" data-act="stop">' + t('dn.stop') + '</button></div>' +
+      (undo ? '<button class="linkbtn" data-act="undo" style="align-self:center">' + t('undo') + '</button>' : '') + '</section>';
+  } else if (screen === 'home') {
+    var cur = state.current && byId(state, state.current), pending = (cur && !cur.done) || state.locked;
+    var dueN = open.filter(function (x) { return isDue(x, state.day); }).length;
+    var label = !open.length ? t('addTask') : pending ? t('home.continue') : t('home.draw');
+    var used = state.cats.filter(function (c) { return catCount(state, c) > 0; });
+    if (used.indexOf(state.filter) < 0) state.filter = '';
+    h += '<section class="card home"><p class="claim">' + t('claim') + '</p>' +
+      '<button class="plantbtn" data-act="plant" title="' + t('home.plantTitle') + '">' + plant(stageFor(streak), watered) + '<span class="stagecap">' + t('home.stage', STAGES[stageFor(streak)].name, stageFor(streak) + 1, STAGES.length) + ' ›</span></button>' +
+      '<p class="streak">' + streakLine(streak) + '</p>' +
+      '<p class="note">' + homeNote(streak, watered, now) + '</p>' +
+      (dueN ? '<p class="note">' + t('home.due', dueN) + '</p>' : '') +
+      (state.points || state.tipsSeen ? '<button class="linkbtn points" data-act="shop" title="' + t('home.shopTitle') + '">' + t('points', state.points) + ' · ' + t('freezes', state.freezes) + (state.trophies.length ? ' · ' + trophyIcon() + ' ' + state.trophies.length : '') + ' ›</button>' : '') +
+      (used.length && !state.timer && !(state.locked && state.skips >= MAX_SKIPS) ? '<div class="field" style="width:100%"><span class="legend">' + t('home.from') + '</span><fieldset class="pills" style="justify-content:center">' +
+        [''].concat(used).map(function (c, i) {
+          return '<label><input type="radio" name="filter" id="filter-' + i + '" value="' + esc(c) + '"' + (c === state.filter ? ' checked' : '') + '>' + (c ? esc(c) : t('all')) + '</label>';
+        }).join('') + '</fieldset></div>' : '') +
+      '<div class="actions"><button class="btn primary draw" data-act="' + (open.length ? 'draw' : 'add') + '">' + label + '</button>' + (open.length ? '<button class="btn" data-act="add">' + t('addTaskPlus') + '</button>' : '') + '</div></section>';
+    if (state.tasks.length) h += '<div class="foot" style="justify-content:center"><button class="linkbtn" data-act="showtasks">' + t('home.all', open.length) + '</button></div>';
+  } else if (!open.length) {
+    h += '<section class="card"><div class="eyebrow">' + t('em.eyebrow') + '</div><p class="task">' + t('em.title') + '</p>' +
+      '<p class="note">' + t('em.note') + '</p>' +
+      '<div class="actions"><button class="btn primary" data-act="add">' + t('addTask') + '</button></div></section>';
+  } else if (state.locked && !state.current) {
+    var list = skippedOpen(state);
+    h += '<section class="card"><div class="eyebrow">' + (state.skips >= MAX_SKIPS ? t('pk.max', MAX_SKIPS) : state.filter ? t('pk.allFrom', esc(state.filter)) : t('pk.all')) + '</div>' +
+      '<p class="task" style="font-size:1.5rem">' + t('pk.choose') + '</p><ul class="pick">' +
+      list.map(function (t) { return '<li><button class="btn" data-act="choose" data-id="' + t.id + '">' + esc(t.text) + '</button></li>'; }).join('') +
+      '</ul><button class="btn" data-act="reshuffle">' + t('pk.reshuffle') + '</button>' +
+      (state.filter ? '<button class="linkbtn" data-act="nofilter">' + t('pk.allCats') + '</button>' : '') + '</section>';
+  } else if (!state.current) {
+    h += '<section class="card"><div class="eyebrow">' + esc(state.filter || t('all')) + '</div><p class="task" style="font-size:1.5rem">' + t('pk.nothing') + '</p>' +
+      '<div class="actions"><button class="btn primary" data-act="stop">' + t('toHome') + '</button></div></section>';
+  } else {
+    var ct = byId(state, state.current), left = MAX_SKIPS - state.skips, dots = '', sl = subs(ct);
+    for (var i = 0; i < MAX_SKIPS; i++) dots += '<span class="dot' + (i < state.skips ? ' used' : '') + '"></span>';
+    var skipOk = state.locked || canSkip(state), el = timerElapsed(state, now), TMS = timerMs(state), tm = timerMin(state), reached = el >= TMS, half = Math.ceil(pointsNow(state) / 2);
+    var had = ct.partial && ct.partial.day === dayKey(now) ? ct.partial.pts : 0;
+    var ptsNow = Math.max(0, pointsNow(state) - had), doneLbl = t('done') + ' · ' + t('points', ptsNow);
+    var acts = el < 0 ? '' : '<button class="btn primary" data-act="done">' + doneLbl + '</button>';
+    if (el < 0) acts += '<div class="duo"><button class="btn primary" data-act="timer">' + t('tk.start') + '<small>' + t('tk.withTimer', tm) + '</small></button>' +
+      '<button class="btn primary" data-act="done">' + t('done') + '<small>' + t('points', ptsNow) + '</small></button></div>' +
+      '<button class="btn" data-act="' + (state.locked ? 'back' : skipOk ? 'skip' : 'noother') + '">' + (state.locked ? t('tk.chooseOther') : t('tk.other')) + '</button>' +
+      (noOther ? '<p class="hint">' + t('tk.noOther') + ' <button class="linkbtn" data-act="add">' + t('tk.newTask') + '</button></p>' : '');
+    else if (!reached) acts += '<button class="btn" data-act="canceltimer">' + t('tk.cancelTimer') + '</button>';
+    else acts += '<button class="btn" data-act="pause">' + t('tk.pause', half) + '</button>';
+    h += '<section class="card' + (revealNext ? ' reveal' : '') + '"><div class="eyebrow">' + (state.filter ? t('tk.yoursFrom', esc(state.filter)) : t('tk.yours')) + ' ' + chips(ct) + '</div>' +
+      '<p class="task">' + esc(ct.text) + '</p>' +
+      (sl.length ? '<details class="steps"' + (subsOpen ? ' open' : '') + '><summary>' + t('tk.subs') + ' · <span id="subcount">' + subCount(sl) + '</span></summary><ul class="sublist">' +
+        sl.map(function (s) { return '<li><label><input type="checkbox" data-sub="' + s.id + '"' + (s.done ? ' checked' : '') + '><span>' + esc(s.text) + '</span></label></li>'; }).join('') +
+        '</ul></details>' + (subMsg ? '<p class="hint" role="status">' + subMsg + '</p>' : '') : '') +
+      (ct.note ? '<details class="steps"><summary>' + t('note') + '</summary><p class="notetext">' + esc(ct.note) + '</p></details>' : '') +
+      (el >= 0 ? '<div class="timer"><b id="clock">' + clockText(el) + '</b><span>' + (reached ? t('tk.reached') : t('tk.of', clockText(TMS))) + '</span>' +
+        '<div class="bar"><i id="clockbar" style="width:' + Math.min(100, el / TMS * 100) + '%"></i></div></div>' : '') +
+      '<div class="actions">' + acts + '</div>' +
+      (el < 0 ? '<div class="meter">' + dots + '<span>' + (left > 0 ? t('tk.skipsLeft', left) : t('tk.noSkips')) + '</span></div>' : '') + '</section>' +
+      '<div class="foot">' + '<button class="linkbtn" data-act="edit" data-id="' + ct.id + '">' + t('tk.edit') + '</button>' +
+      (state.filter && el < 0 ? '<button class="linkbtn" data-act="nofilter">' + t('tk.allAgain') + '</button>' : '') +
+      '</div>';
+  }
+  view.innerHTML = '<div class="stack">' + h + '</div>';
+  revealNext = false;
+}
+function startDraw() {
+  var c0 = state.current && byId(state, state.current);
+  justDone = null;
+  if ((c0 && !c0.done) || state.locked || !openTasks(state).length || reduceMotion) { screen = 'task'; return; }
+  screen = 'drawing';
+  setTimeout(function () { if (screen === 'drawing') { screen = 'task'; revealNext = true; render(); } }, 550);
+}
+function clockText(ms) { var s = Math.floor(ms / 1000); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+var wasReached = false;
+setInterval(function () {
+  var c = document.getElementById('clock'), el = timerElapsed(state, new Date()), TMS = timerMs(state);
+  if (screen !== 'task' || justDone || el < 0 || !c) { wasReached = el >= TMS; return; }
+  var r = el >= TMS;
+  if (r !== wasReached) { wasReached = r; if (r && el < TMS + 5000) tone([523, 659, 784]); render(); return; }
+  c.textContent = clockText(el);
+  var b = document.getElementById('clockbar'); if (b && b.style) b.style.width = Math.min(100, el / TMS * 100) + '%';
+}, 1000);
+/* One level back. Used by the arrow in the header and by the Android back button; false means there is no level above. */
+function backTarget() {
+  if (justDone) return true;
+  if (screen === 'home' || screen === 'drawing') return false;
+  if (screen === 'welcome') return obTest || obStep === 1;
+  return true;
+}
+function goBack() {
+  if (!backTarget()) return false;
+  bak = null; undo = null; noOther = false;
+  if (justDone) { justDone = null; screen = 'home'; }
+  else if (screen === 'welcome') { if (obStep > 0) obStep--; else { obTest = false; screen = 'how'; } }
+  else if (screen === 'form') {
+    editId = null;
+    if (obForm) { obForm = false; screen = 'welcome'; obStep = obCount ? 2 : 1; } else screen = backTo;
+  }
+  else if (screen === 'tasks') screen = tasksFrom;
+  else if (screen === 'plant') screen = plantFrom;
+  else if (screen === 'how') screen = howFrom;
+  else if (screen === 'shop') screen = shopFrom;
+  else screen = 'home';
+  render();
+  return true;
+}
+
+document.getElementById('calbtn').addEventListener('click', function () { noOther = false; screen = 'cal'; calOff = 0; calSel = dayKey(new Date()); justDone = null; editId = null; render(); });
+document.getElementById('back').addEventListener('click', goBack);
+nav.addEventListener('click', function () { noOther = false; screen = 'all'; justDone = null; editId = null; render(); });
+view.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-act]'); if (!b) return;
+  var a = b.dataset.act, now = new Date(), tk;
+  if (a !== 'undo') undo = null;
+  if (a !== 'noother') noOther = false;
+  subsOpen = false; subMsg = '';
+  if (a === 'draw' || a === 'next') { startDraw(); track('draw'); }
+  else if (a === 'obgo') { obForm = true; backTo = 'welcome'; editId = null; draft = newDraft(); noteOpen = false; screen = 'form'; }
+  else if (a === 'obnext') obStep = 1;
+  else if (a === 'obend') { obTest = false; obStep = 0; screen = 'how'; }
+  else if (a === 'replay') { obTest = true; obStep = 0; screen = 'welcome'; }
+  else if (a === 'plant') { if (screen !== 'plant') plantFrom = screen; justDone = null; screen = 'plant'; }
+  else if (a === 'how') { if (screen !== 'how') howFrom = screen; screen = 'how'; }
+  else if (a === 'shop') { if (screen !== 'shop') shopFrom = screen; justDone = null; screen = 'shop'; }
+  else if (a === 'buyfreeze') { snap('buy', t('sh.oneFreeze')); if (buyFreeze(state)) undo.pts = FREEZE_PRICE; else undo = null; }
+  else if (a === 'buylook') { var lk = look(b.dataset.id); snap('buy', lk ? lk.name : ''); if (buyLook(state, b.dataset.id)) undo.pts = lk.price; else undo = null; }
+  else if (a === 'uselook') useLook(state, b.dataset.id);
+  else if (a === 'noother') noOther = true;
+  else if (a === 'tickdone') {
+    tk = byId(state, b.dataset.id); snap('tick', tk ? tk.text : '');
+    var tr = complete(state, now, b.dataset.id);
+    if (tr) { undo.pts = tr.pts + tr.bonus + tr.wbonus; track('done', { via: 'list' }); } else undo = null;
+  }
+  else if (a === 'obdone') { obForm = false; editId = null; state.onboarded = true; state.seeded = true; obTest = false; obStep = 0; obCount = 0; screen = 'home'; track('onboarded'); }
+  else if (a === 'done') { snap('done'); var hadT = !!state.timer; justDone = complete(state, now); if (justDone) { track('done', { via: 'task', timer: hadT }); askReviewLater(); } }
+  else if (a === 'undo') {
+    if (undo) { state = Object.assign(freshState(), JSON.parse(undo.snap)); screen = undo.kind === 'del' || undo.kind === 'tick' ? 'tasks' : undo.kind === 'buy' ? 'shop' : undo.kind === 'finish' ? 'home' : 'task'; undo = null; justDone = null; }
+  }
+  else if (a === 'bakout') { bak = { mode: 'out', text: backupText() }; shareBackup(bak.text); }
+  else if (a === 'bakin') bak = { mode: 'in', text: '', err: '', parsed: null };
+  else if (a === 'bakcancel') bak = null;
+  else if (a === 'bakcheck') { if (bak) checkBackup(); }
+  else if (a === 'bakdo') {
+    if (bak && bak.parsed) { state = Object.assign(freshState(), bak.parsed.state); state.onboarded = true; if (!state.remind) state.remind = { on: false, time: '18:00' }; if (!state.remind.late) state.remind.late = '22:00'; bak = null; justDone = null; screen = 'home'; }
+  }
+  else if (a === 'bakcopy') {
+    var ta = document.getElementById('baktext'), msg = document.getElementById('bakmsg');
+    var fail = function () { ta.focus(); ta.select(); msg.textContent = t('bak.selected'); };
+    try { navigator.clipboard.writeText(bak.text).then(function () { msg.textContent = t('bak.copied'); }, fail); } catch (err) { fail(); }
+    return;
+  }
+  else if (a === 'skip') { skip(state, Math.random); track('skip'); }
+  else if (a === 'timer') { startTimer(state, now); tone([523]); timerNote(true); track('timer', { min: timerMin(state) }); }
+  else if (a === 'canceltimer') state.timer = null;
+  else if (a === 'pause') { snap('pause'); justDone = pauseAfterTimer(state, now); if (justDone) track('pause'); }
+  else if (a === 'finish') { snap('finish'); state.current = justDone.task.id; var before = justDone.pts; justDone = complete(state, now); if (justDone) { track('done', { via: 'finish' }); justDone.pts += before; askReviewLater(); } }
+  else if (a === 'nofilter') { state.filter = ''; if (state.locked && state.skips < MAX_SKIPS) state.locked = false; }
+  else if (a === 'back') state.current = null;
+  else if (a === 'choose') choose(state, b.dataset.id);
+  else if (a === 'reshuffle') reshuffle(state);
+  else if (a === 'stop') { justDone = null; screen = 'home'; }
+  else if (a === 'add') { backTo = screen; editId = null; draft = newDraft(); noteOpen = false; screen = 'form'; }
+  else if (a === 'edit') { backTo = screen; editId = b.dataset.id; tk = byId(state, editId); draft = newDraft(tk); noteOpen = !!draft.note; screen = 'form'; }
+  else if (a === 'showtasks') { tasksFrom = screen; screen = 'tasks'; }
+  else if (a === 'calprev') { calOff--; calSel = null; calSlide = reduceMotion ? '' : 'prev'; }
+  else if (a === 'calnext') { if (calOff < 12) { calOff++; calSel = null; calSlide = reduceMotion ? '' : 'next'; } }
+  else if (a === 'calday') calSel = b.dataset.day;
+  else if (a === 'addday') { backTo = 'cal'; editId = null; draft = newDraft(null, calSel); noteOpen = false; screen = 'form'; }
+  else if (a === 'cleardue') draft.due = '';
+  else if (a === 'addcat') addCat(state, document.getElementById('newcat').value);
+  else if (a === 'addcatform') { var nc = addCat(state, document.getElementById('formcat').value); if (nc && draft.cats.indexOf(nc) < 0) draft.cats.push(nc); }
+  else if (a === 'delcat') {
+    var gone = state.cats[+b.dataset.i];
+    if (gone !== undefined && !catCount(state, gone, true)) {
+      state.cats.splice(+b.dataset.i, 1);
+      state.tasks.forEach(function (x) { if (inCat(x, gone)) { x.cats = catsOf(x).filter(function (c) { return c !== gone; }); delete x.cat; } });
+    }
+  }
+  else if (a === 'cancel') { screen = backTo; editId = null; obForm = false; }
+  else if (a === 'addsub') {
+    var inp = document.getElementById('subtext'), v = inp.value.trim();
+    if (v) draft.subs.push({ id: 's' + Date.now() + draft.subs.length, text: v, done: false });
+  }
+  else if (a === 'delsub') draft.subs = draft.subs.filter(function (s) { return s.id !== b.dataset.id; });
+  else if (a === 'del') {
+    var id = b.dataset.id, gt = byId(state, id);
+    snap('del', gt ? gt.text : '');
+    state.tasks = state.tasks.filter(function (x) { return x.id !== id; });
+    state.skipped = state.skipped.filter(function (x) { return x !== id; });
+    if (state.current === id) state.current = null;
+  }
+  if (justDone && !state.tipsSeen) { justDone.first = true; state.tipsSeen = true; }
+  render();
+  if (noteOn && !state.timer) timerNote(false);
+  if (a === 'done' || a === 'pause' || a === 'finish' || a === 'undo' || a === 'bakdo' || a === 'tickdone' || a === 'del') syncReminders(false);
+  if (a === 'add' || a === 'edit' || a === 'obgo' || a === 'addday') { var f = document.getElementById('tasktext'); if (f) f.focus(); }
+  if (a === 'addsub') { var s2 = document.getElementById('subtext'); if (s2) s2.focus(); }
+});
+view.addEventListener('keydown', function (e) {
+  var map = { subtext: 'addsub', formcat: 'addcatform', newcat: 'addcat' }, act = map[e.target.id];
+  if (e.key === 'Enter' && act) { e.preventDefault(); view.querySelector('[data-act=' + act + ']').click(); }
+});
+view.addEventListener('input', function (e) {
+  if (e.target.id === 'bakpaste' && bak) { bak.text = e.target.value; bak.parsed = null; return; }
+  if (e.target.id === 'tasknote') { draft.note = e.target.value; return; }
+  if (e.target.id !== 'tasktext') return;
+  draft.text = e.target.value;
+  var dup = isDup(state, draft.text, editId);
+  document.getElementById('duphint').hidden = !dup;
+  document.getElementById('savebtn').textContent = t(dup ? 'saveAnyway' : 'save');
+});
+view.addEventListener('submit', function (e) {
+  e.preventDefault();
+  var text = draft.text.trim(); if (!text) return;
+  var tk = editId && byId(state, editId);
+  if (!tk) { tk = addTask(state, text, draft.prio, new Date()); track('task_add', { due: !!draft.due, rep: !!draft.rep, subs: draft.subs.length, cats: draft.cats.length, ob: !!obForm }); }
+  var pend = document.getElementById('subtext');
+  if (pend && pend.value.trim()) draft.subs.push({ id: 's' + Date.now() + draft.subs.length, text: pend.value.trim(), done: false });
+  tk.text = text; tk.prio = draft.prio; tk.cats = draft.cats.slice(); delete tk.cat; tk.rep = draft.rep; delete tk.example;
+  tk.subs = draft.subs.slice(); tk.note = draft.note.trim(); tk.due = draft.due || '';
+  applyDays(tk, draft.days, new Date());
+  if (obForm) { obForm = false; obStep = 2; obCount++; }
+  screen = backTo; editId = null; render(); syncReminders(false);
+});
+view.addEventListener('change', function (e) {
+  if (e.target.name === 'mode') { state.mode = e.target.value; save(); }
+  else if (e.target.name === 'settab') { setTab = e.target.value; render(); }
+  else if (e.target.name === 'filter') {
+    state.filter = e.target.value;
+    var fc = state.current && byId(state, state.current);
+    if (fc && state.filter && !inCat(fc, state.filter)) state.current = null;
+    if (state.locked && state.skips < MAX_SKIPS) state.locked = false;
+    render();
+    var fr = view.querySelector('input[name=filter]:checked'); if (fr) fr.focus();
+  }
+  else if (e.target.name === 'skin') { state.skin = e.target.value; applySkin(); save(); }
+  else if (e.target.name === 'lang') {
+    langPref = e.target.value;
+    try { if (langPref) localStorage.setItem(LANG_KEY, langPref); else localStorage.removeItem(LANG_KEY); } catch (err) {}
+    save(); location.reload();
+  }
+  else if (e.target.id === 'remon') { state.remind.on = e.target.checked; remMsg = ''; render(); syncReminders(true); }
+  else if (e.target.id === 'remtime') { if (e.target.value) { state.remind.late = e.target.value; save(); syncReminders(false); } }
+  else if (e.target.id === 'bakfile') {
+    var file = e.target.files && e.target.files[0]; if (!file || !bak) return;
+    var fr = new FileReader();
+    fr.onload = function () { if (!bak) return; bak.text = String(fr.result); checkBackup(); render(); };
+    fr.onerror = function () { if (!bak) return; bak.err = t('bak.readErr'); render(); };
+    fr.readAsText(file);
+  }
+  else if (e.target.id === 'taskdue') { draft.due = e.target.value || ''; var cd = document.getElementById('cleardue'); if (cd) cd.hidden = !draft.due; }
+  else if (e.target.id === 'timermin') { state.timerMin = Math.min(180, Math.max(1, Math.round(+e.target.value) || TIMER_MIN)); e.target.value = state.timerMin; save(); syncReminders(false); }
+  else if (e.target.id === 'shareon') setShare(e.target.checked);
+  else if (e.target.id === 'soundon') { state.sound = e.target.checked; save(); tone([523]); }
+  else if (e.target.id === 'repon') { draft.rep = e.target.checked ? 'week' : ''; render(); }
+  else if (e.target.name === 'rep') { draft.rep = e.target.value; render(); var rr = document.getElementById('rep-' + draft.rep); if (rr) rr.focus(); }
+  else if (e.target.name === 'repday') {
+    var wv = +e.target.value;
+    draft.days = draft.days.filter(function (d) { return d !== wv; });
+    if (e.target.checked) draft.days.push(wv);
+    draft.days.sort(); render(); var rd = document.getElementById('repday-' + wv); if (rd) rd.focus();
+  }
+  else if (e.target.name === 'prio') draft.prio = e.target.value;
+  else if (e.target.name === 'cat') { draft.cats = draft.cats.filter(function (c) { return c !== e.target.value; }); if (e.target.checked) draft.cats.push(e.target.value); }
+  else if (e.target.dataset.sub) {
+    var list = screen === 'form' ? draft.subs : subs(byId(state, state.current) || {}), s = list.find(function (x) { return x.id === e.target.dataset.sub; });
+    if (s) { s.done = e.target.checked; save(); var sc = document.getElementById('subcount'); if (sc) sc.textContent = subCount(list); }
+    var cr = s && s.done && screen === 'task' ? creditSub(state, new Date()) : null;
+    if (cr) {
+      track('sub');
+      subsOpen = true;
+      subMsg = t('sub.counts') + (cr.week ? ' ' + t('sub.week', cr.week) : '') + (cr.month ? ' ' + t('sub.month', cr.month) : '');
+      render(); syncReminders(false);
+    }
+  }
+});
+/* Swiping left or right on the calendar turns the month, like the arrows. */
+view.addEventListener('touchstart', function (e) {
+  swipe = screen === 'cal' && e.touches.length === 1 && e.target.closest('.calcard') ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+}, { passive: true });
+view.addEventListener('touchend', function (e) {
+  if (!swipe) return;
+  var p = e.changedTouches[0], dx = p.clientX - swipe.x, dy = p.clientY - swipe.y; swipe = null;
+  if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+  if (dx < 0 && calOff >= 12) return;
+  calOff += dx < 0 ? 1 : -1; calSel = null; calSlide = reduceMotion ? '' : dx < 0 ? 'next' : 'prev'; render();
+});
+view.addEventListener('toggle', function (e) { if (e.target.id === 'notebox') noteOpen = e.target.open; }, true);
+[['back', 'back'], ['calbtn', 'calendar'], ['nav', 'settings']].forEach(function (x) { var el = document.getElementById(x[0]); el.setAttribute('aria-label', t(x[1])); el.title = t(x[1]); });
+var appPlug = plug('App');
+if (appPlug) appPlug.addListener('backButton', function () { if (!goBack()) appPlug.minimizeApp(); });
+render();
+syncReminders(false);
+if (appPlug) {
+  var verT = setTimeout(trackOpen, 2000);
+  appPlug.getInfo().then(function (i) { appVersion = String(i.version || '').slice(0, 20); }).catch(function () {}).then(function () { clearTimeout(verT); trackOpen(); });
+  appPlug.addListener('appStateChange', function (st) { if (st.isActive) trackOpen(); else flush(); });
+} else trackOpen();
+</script>
+
+</body></html>
