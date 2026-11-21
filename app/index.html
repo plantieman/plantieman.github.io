@@ -92,6 +92,12 @@ button:focus-visible,input:focus-visible,label:focus-within,summary:focus-visibl
 
 details.steps{font-size:.92rem;color:var(--muted)}
 details.steps summary{cursor:pointer;width:fit-content}
+details.more>summary{cursor:pointer;width:fit-content;font-size:.92rem;font-weight:700;color:var(--muted)}
+.morebody{display:flex;flex-direction:column;gap:16px;margin-top:16px}
+.grow{display:flex;align-items:flex-end;justify-content:center;gap:10px}
+.grow .was .plant{width:64px;opacity:.45}
+.grow .now .plant{width:136px}
+.grow .arrow{font-size:1.6rem;color:var(--muted);padding-bottom:22px}
 .sublist{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
 .sublist li{display:flex;gap:10px;align-items:center;justify-content:space-between}
 .sublist label{display:flex;gap:10px;align-items:baseline;min-width:0;overflow-wrap:anywhere;color:var(--ink);cursor:pointer}
@@ -205,6 +211,7 @@ input[type=number]{font:inherit;padding:13px 16px;border-radius:16px;border:1px 
 .explain p{margin:0}
 @media (prefers-reduced-motion:no-preference){
   .back-card .sprout{animation:sway .55s ease-in-out both}
+  .grow .now{display:inline-block;transform-origin:50% 90%;animation:sway .8s .2s ease-in-out both}
   @keyframes sway{0%{transform:scale(.55) rotate(-14deg);opacity:.3}60%{transform:scale(1.1) rotate(7deg);opacity:1}100%{transform:scale(1) rotate(0)}}
   .calcard.slide-next{animation:slidenext .25s ease-out both}
   .calcard.slide-prev{animation:slideprev .25s ease-out both}
@@ -388,11 +395,24 @@ function ensureCurrent(s, rnd) {
   if (skippedOpen(s).length) s.locked = true;
 }
 function canSkip(s) { return !s.locked && s.skips < MAX_SKIPS && openTasks(s).length > 1; }
+/* Switching only costs a switch (and a point) when it brings a new task from the chosen category.
+   Returns 'cat' when the category has no other task but other categories do: the app then asks instead of leaving the category.
+   Returns 'pick' when no other task is left at all: the skipped ones are laid out to choose from, without counting a switch. */
 function skip(s, rnd) {
-  if (!canSkip(s) || !s.current) return;
+  if (!canSkip(s) || !s.current) return '';
+  if (!pool(s, [s.current]).length) {
+    if (s.filter && pool(Object.assign({}, s, { filter: '' }), [s.current]).length) return 'cat';
+    s.skipped.push(s.current); s.current = null; s.timer = null; s.locked = true; return 'pick';
+  }
   s.skipped.push(s.current); s.skips++; s.daySkips++; s.current = null; s.timer = null;
-  if (s.skips >= MAX_SKIPS) { s.locked = true; return; }
-  if (s.filter && !pool(s).length && !pool(s, s.avoid).length) s.filter = '';
+  if (s.skips >= MAX_SKIPS) { s.locked = true; return 'max'; }
+  ensureCurrent(s, rnd);
+  return 'ok';
+}
+/* Leaving the chosen category on purpose: draws from all categories, without counting a switch. The current task comes back later. */
+function drawOutside(s, rnd) {
+  if (!s.current) return;
+  s.avoid = s.avoid.concat([s.current]); s.filter = ''; s.current = null; s.timer = null;
   ensureCurrent(s, rnd);
 }
 function choose(s, id) { if (s.locked && s.skipped.indexOf(id) >= 0) s.current = id; }
@@ -483,9 +503,14 @@ function pauseAfterTimer(s, now) {
 }
 function reshuffle(s) { s.avoid = s.avoid.concat(s.skipped); s.skips = 0; s.skipped = []; s.locked = false; s.current = null; s.timer = null; }
 function norm(x) { return String(x).trim().toLowerCase().replace(/\s+/g, ' '); }
+/* Only tasks that are open right now count as duplicates. Done tasks never do, and the waiting next copy of a recurring task only gets a note. */
 function isDup(s, text, exceptId) {
   var n = norm(text);
-  return !!n && undone(s).some(function (t) { return !t.example && t.id !== exceptId && norm(t.text) === n; });
+  return !!n && openTasks(s).some(function (t) { return !t.example && t.id !== exceptId && norm(t.text) === n; });
+}
+function waitingTwin(s, text, exceptId) {
+  var n = norm(text), open = openTasks(s);
+  return n ? undone(s).find(function (t) { return t.id !== exceptId && open.indexOf(t) < 0 && norm(t.text) === n; }) || null : null;
 }
 function addCat(s, name) {
   var v = String(name).trim().slice(0, 24);
@@ -622,7 +647,7 @@ de: {
   'form.repNote': 'Nach dem Erledigen kommt sie von selbst wieder.',
   'form.subs': 'Unteraufgaben (optional)', 'form.subPh': 'Kleiner Schritt', 'form.noteAdd': 'Notiz hinzufügen', 'form.notePh': 'Was du dir dazu merken willst',
   'form.edit': 'Aufgabe bearbeiten', 'form.ob': 'Was schiebst du gerade vor dir her?', 'form.new': 'Neue Aufgabe', 'form.ph': 'z. B. Wäsche aufhängen',
-  'form.dup': 'Diese Aufgabe gibt es schon in deiner Liste.', 'form.later': 'Aufgabe später erstellen',
+  'form.dup': 'Diese Aufgabe gibt es schon in deiner Liste.', 'form.comesBack': function (d) { return 'Diese wiederkehrende Aufgabe kommt am ' + d + ' von selbst wieder. Brauchst du sie vorher, leg sie einfach zusätzlich an.'; }, 'form.more': 'Weitere Angaben: Fälligkeit, Priorität, Kategorie und mehr', 'form.later': 'Aufgabe später erstellen',
   'cat.own': 'Eigene Kategorie', 'cat.add': 'Kategorie hinzufügen',
 
   'st.empty': 'Sobald du die erste Aufgabe erledigt hast, stehen hier deine Zahlen.', 'st.noCat': 'Ohne Kategorie',
@@ -655,9 +680,7 @@ de: {
   'ob.s2': 'Du drückst den Knopf und bekommst eine Aufgabe. Passt sie gerade nicht, ziehst du eine andere.',
   'ob.s3': function (m) { return 'Du startest sie mit einem Timer von ' + m + '. Er läuft sofort los, fertig werden musst du in der Zeit nicht. Jeder Tag mit einer Aufgabe lässt deine Pflanze wachsen.'; },
   'ob.backHow': 'Zurück zur Erklärung', 'ob.go': 'Los geht\'s',
-  'ob.added': function (n) { return n === 1 ? 'Deine erste Aufgabe ist eingetragen.' : n + ' Aufgaben sind eingetragen.'; },
-  'ob.more': 'Du kannst jetzt weitere eintragen oder gleich loslegen. Nachtragen geht jederzeit.',
-  'ob.toHome': 'Weiter zur Startseite', 'ob.another': 'Noch eine Aufgabe eintragen', drawing: 'Deine Aufgabe kommt.',
+  drawing: 'Deine Aufgabe kommt.',
 
   allTasks: 'Alle Aufgaben', addTask: 'Aufgabe hinzufügen', addTaskPlus: '+ Aufgabe hinzufügen',
   'tl.deleted': function (l) { return '„' + l + '“ gelöscht.'; }, 'tl.ticked': function (l, p) { return '„' + l + '“ erledigt · +' + p + ' Punkte.'; },
@@ -721,6 +744,7 @@ de: {
   'dn.tipFreeze': function (f, wk) { return 'Verpasst du mal einen Tag, schützt ein Freeze deine Pflanze. Du hast ' + f + ', jede Woche kommen ' + wk + ' dazu.'; },
   'dn.partial': 'Der Tag zählt, deine Pflanze ist gegossen. Die Aufgabe bleibt offen und kommt wieder.',
   'dn.watered': function (line) { return 'Deine Pflanze ist für heute gegossen. ' + line + '.'; }, 'dn.nth': function (c) { return 'Das war Aufgabe ' + c + ' heute.'; },
+  'dn.grew': function (a, b) { return 'Aus deinem ' + a + ' ist ein ' + b + ' geworden.'; },
   'dn.finish': 'Doch fertig geworden · volle Punkte', 'dn.next': 'Nächste Aufgabe', 'dn.stop': 'Reicht für jetzt',
 
   'home.continue': 'Weiter mit deiner Aufgabe', 'home.draw': 'Aufgabe ziehen', 'home.plantTitle': 'Deine Pflanze ansehen',
@@ -733,7 +757,8 @@ de: {
   'pk.all': 'Das waren alle', 'pk.choose': 'Such dir eine davon aus.', 'pk.reshuffle': 'Neu mischen', 'pk.allCats': 'Aus allen Kategorien ziehen',
   'pk.nothing': 'Hier ist gerade nichts offen.', toHome: 'Zur Startseite',
   'tk.start': 'Aufgabe starten', 'tk.withTimer': function (m) { return 'mit ' + m + '-Minuten-Timer'; }, 'tk.chooseOther': 'Andere auswählen',
-  'tk.other': 'Andere Aufgabe ziehen', 'tk.noOther': 'Es gibt gerade keine andere offene Aufgabe.', 'tk.newTask': 'Neue Aufgabe erstellen',
+  'tk.other': 'Andere Aufgabe ziehen', 'tk.noOther': 'Es gibt gerade keine andere offene Aufgabe.',
+  'tk.noOtherIn': function (c) { return 'In „' + c + '“ ist gerade keine andere Aufgabe offen. Dein Wechsel bleibt erhalten.'; }, 'tk.fromAll': 'Aus allen Kategorien ziehen', 'tk.newTask': 'Neue Aufgabe erstellen',
   'tk.cancelTimer': 'Timer abbrechen', 'tk.pause': function (n) { return 'Für heute aufhören · ' + n + ' Punkte'; },
   'tk.yours': 'Deine Aufgabe', 'tk.yoursFrom': function (c) { return 'Deine Aufgabe aus ' + c; }, 'tk.subs': 'Unteraufgaben',
   'tk.reached': 'Ziel erreicht. Du kannst weitermachen oder aufhören.', 'tk.of': function (c) { return 'von ' + c; },
@@ -807,7 +832,7 @@ en: {
   'form.repNote': 'It comes back by itself once done.',
   'form.subs': 'Subtasks (optional)', 'form.subPh': 'A small step', 'form.noteAdd': 'Add a note', 'form.notePh': 'Anything you want to remember about it',
   'form.edit': 'Edit task', 'form.ob': 'What have you been putting off?', 'form.new': 'New task', 'form.ph': 'e.g. Hang up the laundry',
-  'form.dup': 'This task is already on your list.', 'form.later': 'Add a task later',
+  'form.dup': 'This task is already on your list.', 'form.comesBack': function (d) { return 'This repeating task comes back by itself on ' + d + '. If you need it sooner, just add it again.'; }, 'form.more': 'More details: due date, priority, category and more', 'form.later': 'Add a task later',
   'cat.own': 'Your own category', 'cat.add': 'Add category',
 
   'st.empty': 'Once you finish your first task, your numbers show up here.', 'st.noCat': 'No category',
@@ -840,9 +865,7 @@ en: {
   'ob.s2': 'You press the button and get one task. If it doesn\'t fit right now, you draw another.',
   'ob.s3': function (m) { return 'You start it with a ' + m + ' timer. It runs right away, and you don\'t have to finish in that time. Every day with a task makes your plant grow.'; },
   'ob.backHow': 'Back to the explanation', 'ob.go': 'Let\'s go',
-  'ob.added': function (n) { return n === 1 ? 'Your first task is in.' : n + ' tasks are in.'; },
-  'ob.more': 'You can add more now or get started right away. You can always add more later.',
-  'ob.toHome': 'Go to start screen', 'ob.another': 'Add another task', drawing: 'Your task is coming.',
+  drawing: 'Your task is coming.',
 
   allTasks: 'All tasks', addTask: 'Add task', addTaskPlus: '+ Add task',
   'tl.deleted': function (l) { return '“' + l + '” deleted.'; }, 'tl.ticked': function (l, p) { return '“' + l + '” done · +' + p + ' points.'; },
@@ -906,6 +929,7 @@ en: {
   'dn.tipFreeze': function (f, wk) { return 'If you miss a day, a freeze protects your plant. You have ' + f + ', and you get ' + wk + ' more every week.'; },
   'dn.partial': 'The day counts and your plant is watered. The task stays open and will come back.',
   'dn.watered': function (line) { return 'Your plant is watered for today. ' + line + '.'; }, 'dn.nth': function (c) { return 'That was task number ' + c + ' today.'; },
+  'dn.grew': function (a, b) { return 'Your ' + String(a).toLowerCase() + ' has grown into a ' + String(b).toLowerCase() + '.'; },
   'dn.finish': 'Finished after all · full points', 'dn.next': 'Next task', 'dn.stop': 'That\'s enough for now',
 
   'home.continue': 'Back to your task', 'home.draw': 'Draw a task', 'home.plantTitle': 'See your plant',
@@ -918,7 +942,8 @@ en: {
   'pk.all': 'That was everything', 'pk.choose': 'Pick one of these.', 'pk.reshuffle': 'Shuffle again', 'pk.allCats': 'Draw from all categories',
   'pk.nothing': 'Nothing is open here right now.', toHome: 'To the start screen',
   'tk.start': 'Start task', 'tk.withTimer': function (m) { return m + '-minute timer'; }, 'tk.chooseOther': 'Pick another',
-  'tk.other': 'Draw another task', 'tk.noOther': 'There is no other open task right now.', 'tk.newTask': 'Create a new task',
+  'tk.other': 'Draw another task', 'tk.noOther': 'There is no other open task right now.',
+  'tk.noOtherIn': function (c) { return 'There is no other open task in “' + c + '” right now. Your switch is not used up.'; }, 'tk.fromAll': 'Draw from all categories', 'tk.newTask': 'Create a new task',
   'tk.cancelTimer': 'Cancel timer', 'tk.pause': function (n) { return 'Stop for today · ' + n + ' points'; },
   'tk.yours': 'Your task', 'tk.yoursFrom': function (c) { return 'Your task from ' + c; }, 'tk.subs': 'Subtasks',
   'tk.reached': 'Goal reached. You can keep going or stop.', 'tk.of': function (c) { return 'of ' + c; },
@@ -1052,7 +1077,7 @@ var obStep = 0, obTest = false, obForm = false, obCount = 0, revealNext = false;
 var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 var SPROUT = '<svg class="sprout" viewBox="0 0 24 24" aria-hidden="true"><path class="st" d="M12 21v-9"/><path class="lf" d="M12 13C12 8 8.5 5.5 4 5.5 4 10 7 13 12 13z"/><path class="lf2" d="M12 11c0-4 2.8-6.5 7-6.5 0 4-2.6 6.5-7 6.5z"/></svg>';
 var screen = state.onboarded ? 'home' : 'welcome', justDone = null, editId = null, backTo = 'home', calOff = 0, draft = newDraft();
-var noOther = false, tasksFrom = 'all', howFrom = 'all', plantFrom = 'home', shopFrom = 'home', noteOn = false, noteOpen = false;
+var noOther = false, tasksFrom = 'all', howFrom = 'all', plantFrom = 'home', shopFrom = 'home', noteOn = false, noteOpen = false, moreOpen = false;
 var FEEDBACK_MAIL = 'plantieman@gmail.com';
 var SITE_URL = 'https://plantieman.github.io/';
 var STORE_URL = 'https://play.google.com/store/apps/details?id=de.plantyman.app';
@@ -1183,13 +1208,19 @@ function noteField() {
   return '<details class="steps" id="notebox"' + (noteOpen ? ' open' : '') + '><summary>' + t(draft.note ? 'note' : 'form.noteAdd') + '</summary>' +
     '<textarea class="plain" id="tasknote" maxlength="500" rows="3" aria-label="' + t('note') + '" placeholder="' + t('form.notePh') + '" style="margin-top:10px">' + esc(draft.note) + '</textarea></details>';
 }
+function dupText() {
+  if (isDup(state, draft.text, editId)) return t('form.dup');
+  var w = waitingTwin(state, draft.text, editId);
+  return w ? t('form.comesBack', parseKey(w.from).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long' })) : '';
+}
 function taskForm() {
   var et = editId ? byId(state, editId) : null, dup = isDup(state, draft.text, editId);
   var h = '<form id="taskform" class="card"><label class="field"><span>' + (et ? t('form.edit') : obForm ? t('form.ob') : t('form.new')) + '</span>' +
     '<input type="text" id="tasktext" maxlength="140" placeholder="' + t('form.ph') + '" autocomplete="off" required value="' + esc(draft.text) + '"></label>' +
-    '<p class="hint" id="duphint"' + (dup ? '' : ' hidden') + '>' + t('form.dup') + '</p>' +
-    dueField() + prioSeg(draft.prio) + catSeg(draft.cats) + repSeg();
-  h += subField() + noteField();
+    '<p class="hint" id="duphint"' + (dupText() ? '' : ' hidden') + '>' + dupText() + '</p>';
+  var extra = dueField() + prioSeg(draft.prio) + catSeg(draft.cats) + repSeg() + subField() + noteField();
+  /* A new task asks for its title first; everything else waits behind "More details". Editing shows it all. */
+  h += et ? extra : '<details class="more" id="morebox"' + (moreOpen ? ' open' : '') + '><summary>' + t('form.more') + '</summary><div class="morebody">' + extra + '</div></details>';
   if (obForm && !obCount) return h + '<button class="btn primary" type="submit" id="savebtn">' + t(dup ? 'saveAnyway' : 'save') + '</button>' +
     '<button class="linkbtn" type="button" data-act="obdone" style="align-self:center">' + t('form.later') + '</button></form>';
   return h + '<div class="row"><button class="btn" type="button" data-act="cancel">' + t('cancel') + '</button><button class="btn primary" type="submit" id="savebtn">' + t(dup ? 'saveAnyway' : 'save') + '</button></div></form>';
@@ -1316,11 +1347,6 @@ function render() {
       '<li>' + t('ob.s2') + '</li>' +
       '<li>' + t('ob.s3', minText(timerMin(state))) + '</li></ol>' +
       '<div class="actions">' + (obTest ? '<button class="btn primary" data-act="obend">' + t('ob.backHow') + '</button>' : '<button class="btn primary draw" data-act="obgo">' + t('ob.go') + '</button>') + '</div></section>';
-  } else if (screen === 'welcome') {
-    h = '<section class="card home"><p class="lead">' + t('ob.added', obCount) + '</p>' +
-      '<p class="note">' + t('ob.more') + '</p>' +
-      '<div class="actions"><button class="btn primary" data-act="obdone">' + t('ob.toHome') + '</button>' +
-      '<button class="btn" data-act="obgo">' + t('ob.another') + '</button></div></section>';
   } else if (screen === 'drawing') {
     h = '<section class="card back-card">' + SPROUT + '<p class="note" role="status">' + t('drawing') + '</p></section>';
   } else if (screen === 'form') {
@@ -1442,6 +1468,8 @@ function render() {
       '<span class="plus">' + t('plusPoints', justDone.pts) + '</span>' +
       (justDone.bonus ? '<span class="plus">' + trophyIcon() + ' ' + t('monthStreaks', 1) + ' · ' + t('plusBonus', justDone.bonus) + '</span>' : '') +
       (justDone.wbonus ? '<span class="plus">' + t('weekStreaks', 1) + ' · ' + t('plusBonus', justDone.wbonus) + '</span>' : '') +
+      (justDone.grew ? '<div class="grow"><span class="was">' + plant(justDone.grew.from, false) + '</span><span class="arrow" aria-hidden="true">›</span>' +
+        '<span class="now">' + plant(justDone.grew.to, true) + '</span></div><p class="streak" role="status">' + t('dn.grew', STAGES[justDone.grew.from].name, STAGES[justDone.grew.to].name) + '</p>' : '') +
       (justDone.first ? '<p class="hint">' + t('dn.tipPoints') + '</p>' +
         '<p class="hint">' + t('dn.tipFreeze', state.freezes, FREEZES_PER_WEEK) + '</p>' : '') +
       '<p class="note">' + (justDone.partial ? t('dn.partial') : c === 1 ? t('dn.watered', streakLine(streak)) : t('dn.nth', c)) + '</p>' +
@@ -1491,7 +1519,8 @@ function render() {
     if (el < 0) acts += '<div class="duo"><button class="btn primary" data-act="timer">' + t('tk.start') + '<small>' + t('tk.withTimer', tm) + '</small></button>' +
       '<button class="btn primary" data-act="done">' + t('done') + '<small>' + t('points', ptsNow) + '</small></button></div>' +
       '<button class="btn" data-act="' + (state.locked ? 'back' : skipOk ? 'skip' : 'noother') + '">' + (state.locked ? t('tk.chooseOther') : t('tk.other')) + '</button>' +
-      (noOther ? '<p class="hint">' + t('tk.noOther') + ' <button class="linkbtn" data-act="add">' + t('tk.newTask') + '</button></p>' : '');
+      (noOther === 'cat' ? '<p class="hint" role="status">' + t('tk.noOtherIn', esc(state.filter)) + ' <button class="linkbtn" data-act="outside">' + t('tk.fromAll') + '</button></p>'
+        : noOther ? '<p class="hint">' + t('tk.noOther') + ' <button class="linkbtn" data-act="add">' + t('tk.newTask') + '</button></p>' : '');
     else if (!reached) acts += '<button class="btn" data-act="canceltimer">' + t('tk.cancelTimer') + '</button>';
     else acts += '<button class="btn" data-act="pause">' + t('tk.pause', half) + '</button>';
     h += '<section class="card' + (revealNext ? ' reveal' : '') + '"><div class="eyebrow">' + (state.filter ? t('tk.yoursFrom', esc(state.filter)) : t('tk.yours')) + ' ' + chips(ct) + '</div>' +
@@ -1511,6 +1540,7 @@ function render() {
   view.innerHTML = '<div class="stack">' + h + '</div>';
   revealNext = false;
 }
+function endOnboarding() { obForm = false; editId = null; state.onboarded = true; state.seeded = true; obTest = false; obStep = 0; obCount = 0; track('onboarded'); }
 function startDraw() {
   var c0 = state.current && byId(state, state.current);
   justDone = null;
@@ -1542,7 +1572,7 @@ function goBack() {
   else if (screen === 'welcome') { if (obStep > 0) obStep--; else { obTest = false; screen = 'how'; } }
   else if (screen === 'form') {
     editId = null;
-    if (obForm) { obForm = false; screen = 'welcome'; obStep = obCount ? 2 : 1; } else screen = backTo;
+    if (obForm) { obForm = false; screen = 'welcome'; obStep = 1; } else screen = backTo;
   }
   else if (screen === 'tasks') screen = tasksFrom;
   else if (screen === 'plant') screen = plantFrom;
@@ -1558,12 +1588,12 @@ document.getElementById('back').addEventListener('click', goBack);
 nav.addEventListener('click', function () { noOther = false; screen = 'all'; justDone = null; editId = null; render(); });
 view.addEventListener('click', function (e) {
   var b = e.target.closest('[data-act]'); if (!b) return;
-  var a = b.dataset.act, now = new Date(), tk;
+  var a = b.dataset.act, now = new Date(), tk, stage0 = stageFor(state.streak);
   if (a !== 'undo') undo = null;
-  if (a !== 'noother') noOther = false;
+  if (a !== 'noother' && a !== 'skip') noOther = false;
   subsOpen = false; subMsg = '';
   if (a === 'draw' || a === 'next') { startDraw(); track('draw'); }
-  else if (a === 'obgo') { obForm = true; backTo = 'welcome'; editId = null; draft = newDraft(); noteOpen = false; screen = 'form'; }
+  else if (a === 'obgo') { obForm = true; backTo = 'welcome'; editId = null; draft = newDraft(); noteOpen = false; moreOpen = false; screen = 'form'; }
   else if (a === 'obnext') obStep = 1;
   else if (a === 'obend') { obTest = false; obStep = 0; screen = 'how'; }
   else if (a === 'replay') { obTest = true; obStep = 0; screen = 'welcome'; }
@@ -1579,7 +1609,7 @@ view.addEventListener('click', function (e) {
     var tr = complete(state, now, b.dataset.id);
     if (tr) { undo.pts = tr.pts + tr.bonus + tr.wbonus; track('done', { via: 'list' }); } else undo = null;
   }
-  else if (a === 'obdone') { obForm = false; editId = null; state.onboarded = true; state.seeded = true; obTest = false; obStep = 0; obCount = 0; screen = 'home'; track('onboarded'); }
+  else if (a === 'obdone') { endOnboarding(); screen = 'home'; }
   else if (a === 'done') { snap('done'); var hadT = !!state.timer; justDone = complete(state, now); if (justDone) { track('done', { via: 'task', timer: hadT }); askReviewLater(); } }
   else if (a === 'undo') {
     if (undo) { state = Object.assign(freshState(), JSON.parse(undo.snap)); screen = undo.kind === 'del' || undo.kind === 'tick' ? 'tasks' : undo.kind === 'buy' ? 'shop' : undo.kind === 'finish' ? 'home' : 'task'; undo = null; justDone = null; }
@@ -1597,7 +1627,8 @@ view.addEventListener('click', function (e) {
     try { navigator.clipboard.writeText(bak.text).then(function () { msg.textContent = t('bak.copied'); }, fail); } catch (err) { fail(); }
     return;
   }
-  else if (a === 'skip') { skip(state, Math.random); track('skip'); }
+  else if (a === 'skip') { var sr = skip(state, Math.random); noOther = sr === 'cat' ? 'cat' : false; if (sr === 'ok' || sr === 'max') track('skip'); }
+  else if (a === 'outside') { drawOutside(state, Math.random); revealNext = true; track('draw'); }
   else if (a === 'timer') { startTimer(state, now); tone([523]); timerNote(true); track('timer', { min: timerMin(state) }); }
   else if (a === 'canceltimer') state.timer = null;
   else if (a === 'pause') { snap('pause'); justDone = pauseAfterTimer(state, now); if (justDone) track('pause'); }
@@ -1607,13 +1638,13 @@ view.addEventListener('click', function (e) {
   else if (a === 'choose') choose(state, b.dataset.id);
   else if (a === 'reshuffle') reshuffle(state);
   else if (a === 'stop') { justDone = null; screen = 'home'; }
-  else if (a === 'add') { backTo = screen; editId = null; draft = newDraft(); noteOpen = false; screen = 'form'; }
+  else if (a === 'add') { backTo = screen; editId = null; draft = newDraft(); noteOpen = false; moreOpen = false; screen = 'form'; }
   else if (a === 'edit') { backTo = screen; editId = b.dataset.id; tk = byId(state, editId); draft = newDraft(tk); noteOpen = !!draft.note; screen = 'form'; }
   else if (a === 'showtasks') { tasksFrom = screen; screen = 'tasks'; }
   else if (a === 'calprev') { calOff--; calSel = null; calSlide = reduceMotion ? '' : 'prev'; }
   else if (a === 'calnext') { if (calOff < 12) { calOff++; calSel = null; calSlide = reduceMotion ? '' : 'next'; } }
   else if (a === 'calday') calSel = b.dataset.day;
-  else if (a === 'addday') { backTo = 'cal'; editId = null; draft = newDraft(null, calSel); noteOpen = false; screen = 'form'; }
+  else if (a === 'addday') { backTo = 'cal'; editId = null; draft = newDraft(null, calSel); noteOpen = false; moreOpen = !!calSel; screen = 'form'; }
   else if (a === 'cleardue') draft.due = '';
   else if (a === 'addcat') addCat(state, document.getElementById('newcat').value);
   else if (a === 'addcatform') { var nc = addCat(state, document.getElementById('formcat').value); if (nc && draft.cats.indexOf(nc) < 0) draft.cats.push(nc); }
@@ -1638,6 +1669,8 @@ view.addEventListener('click', function (e) {
     if (state.current === id) state.current = null;
   }
   if (justDone && !state.tipsSeen) { justDone.first = true; state.tipsSeen = true; }
+  /* When this task made the plant reach a new stage, the done card shows it right away. */
+  if (justDone && (a === 'done' || a === 'pause') && stageFor(state.streak) > stage0) justDone.grew = { from: stage0, to: stageFor(state.streak) };
   render();
   if (noteOn && !state.timer) timerNote(false);
   if (a === 'done' || a === 'pause' || a === 'finish' || a === 'undo' || a === 'bakdo' || a === 'tickdone' || a === 'del') syncReminders(false);
@@ -1653,8 +1686,8 @@ view.addEventListener('input', function (e) {
   if (e.target.id === 'tasknote') { draft.note = e.target.value; return; }
   if (e.target.id !== 'tasktext') return;
   draft.text = e.target.value;
-  var dup = isDup(state, draft.text, editId);
-  document.getElementById('duphint').hidden = !dup;
+  var dup = isDup(state, draft.text, editId), dh = document.getElementById('duphint'), dt = dupText();
+  dh.hidden = !dt; dh.textContent = dt;
   document.getElementById('savebtn').textContent = t(dup ? 'saveAnyway' : 'save');
 });
 view.addEventListener('submit', function (e) {
@@ -1667,8 +1700,10 @@ view.addEventListener('submit', function (e) {
   tk.text = text; tk.prio = draft.prio; tk.cats = draft.cats.slice(); delete tk.cat; tk.rep = draft.rep; delete tk.example;
   tk.subs = draft.subs.slice(); tk.note = draft.note.trim(); tk.due = draft.due || '';
   applyDays(tk, draft.days, new Date());
-  if (obForm) { obForm = false; obStep = 2; obCount++; }
-  screen = backTo; editId = null; render(); syncReminders(false);
+  /* The first task of the welcome flow goes straight to the draw, so the first start is one tap away. */
+  if (obForm) { endOnboarding(); startDraw(); }
+  else screen = backTo;
+  editId = null; render(); syncReminders(false);
 });
 view.addEventListener('change', function (e) {
   if (e.target.name === 'mode') { state.mode = e.target.value; save(); }
@@ -1733,7 +1768,7 @@ view.addEventListener('touchend', function (e) {
   if (dx < 0 && calOff >= 12) return;
   calOff += dx < 0 ? 1 : -1; calSel = null; calSlide = reduceMotion ? '' : dx < 0 ? 'next' : 'prev'; render();
 });
-view.addEventListener('toggle', function (e) { if (e.target.id === 'notebox') noteOpen = e.target.open; }, true);
+view.addEventListener('toggle', function (e) { if (e.target.id === 'notebox') noteOpen = e.target.open; else if (e.target.id === 'morebox') moreOpen = e.target.open; }, true);
 [['back', 'back'], ['calbtn', 'calendar'], ['nav', 'settings']].forEach(function (x) { var el = document.getElementById(x[0]); el.setAttribute('aria-label', t(x[1])); el.title = t(x[1]); });
 var appPlug = plug('App');
 if (appPlug) appPlug.addListener('backButton', function () { if (!goBack()) appPlug.minimizeApp(); });
