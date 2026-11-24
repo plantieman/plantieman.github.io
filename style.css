@@ -58,3 +58,14 @@ footer {
   font-size: 15px;
 }
 footer a { margin-right: 16px; }
+.cta { margin: 24px 0 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.store {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: #A8D5A2; color: #2F3A2D; text-decoration: none;
+  font-weight: 700; font-size: 18px; padding: 14px 26px; border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(80, 60, 40, .12);
+}
+.store:hover { background: #9CCB95; }
+.store svg { width: 20px; height: 20px; }
+.cta .alt { color: var(--muted); font-size: 15px; }
+.brand img { width: 30px; height: 30px; border-radius: 50%; vertical-align: -6px; margin-right: 8px; }
